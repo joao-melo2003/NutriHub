@@ -1,5 +1,5 @@
-services:
 
+services:
   database:
     image: mariadb:11.8
     container_name: nutrihub-database
@@ -16,16 +16,28 @@ services:
     volumes:
       - mariadb_data:/var/lib/mysql
 
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   backend:
     build:
       context: ./backend
+
     container_name: nutrihub-backend
+
     environment:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+
     depends_on:
-      - database
+      database:
+        condition: service_healthy
+
     ports:
       - "8080:8080"
 
@@ -40,5 +52,6 @@ services:
 
     ports:
       - "3000:3000"
+
 volumes:
   mariadb_data:
