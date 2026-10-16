@@ -14,6 +14,5 @@ CREATE TABLE rotina_treinos (
     horario_fim TIME NOT NULL,
     grupo ENUM('SUPERIORES', 'INFERIORES', 'ABDOMINAL') NOT NULL,
 
-    CONSTRAINT chave_estrangeira_rotina_treinos_rotinas
-        FOREIGN KEY (rotina_id) REFERENCES rotinas(id)
+    CONSTRAINT chave_estrangeira_rotina_treinos_rotinas FOREIGN KEY (rotina_id) REFERENCES rotinas(id)
 );

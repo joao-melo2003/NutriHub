@@ -13,6 +13,5 @@ CREATE TABLE rotinas (
     ) NOT NULL,
     distribuicao ENUM('PRIORIDADE', 'BALANCEADO') NOT NULL,
 
-    CONSTRAINT chave_estrangeira_rotinas_usuarios
-        FOREIGN KEY (id_usuario) REFERENCES usuarios(CPF)
+    CONSTRAINT chave_estrangeira_rotinas_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(CPF)
 );
