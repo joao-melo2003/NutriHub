@@ -42,19 +42,10 @@ public class Usuario {
     @Column(name = "softdelete")
     private Boolean softdelete;
 
-    public Usuario() {
-    }
+    @Column(name = "qtsenha", nullable = false)
+    private Integer qtSenha;
 
-    public Usuario(String cpf, String nome, String email, String senha, LocalDate dataNascimento, Sexo_biologico sexo, Tipo_usuarios tipo, Status_usuarios status, Boolean softdelete) {
-        this.cpf = cpf;
-        this.nome = nome;
-        this.email = email;
-        this.senha = senha;
-        this.dataNascimento = dataNascimento;
-        this.sexo = sexo;
-        this.tipo = tipo;
-        this.status = status;
-        this.softdelete = softdelete;
+    public Usuario() {
     }
 
     public String getCpf() {
@@ -127,5 +118,13 @@ public class Usuario {
 
     public void setSoftdelete(Boolean softdelete) {
         this.softdelete = softdelete;
+    }
+
+    public Integer getQtSenha(){
+        return qtSenha;
+    }
+
+    public void setQtSenha(Integer qtSenha){
+        this.qtSenha = qtSenha;
     }
 }

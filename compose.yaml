@@ -1,21 +1,16 @@
-
 services:
   database:
     image: mariadb:11.8
     container_name: nutrihub-database
-
     environment:
       MARIADB_DATABASE: ${DB_NAME}
       MARIADB_USER: ${DB_USER}
       MARIADB_PASSWORD: ${DB_PASSWORD}
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-
     ports:
       - "3306:3306"
-
     volumes:
       - mariadb_data:/var/lib/mysql
-
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
@@ -26,33 +21,36 @@ services:
   backend:
     build:
       context: ./backend
-
     container_name: nutrihub-backend
-
     environment:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
-
+      SERVER_ADDRESS: 0.0.0.0
     depends_on:
       database:
         condition: service_healthy
-
     ports:
       - "8080:8080"
+
+    volumes:
+      - ./backend:/app
+      - maven_cache:/root/.m2
 
   frontend:
     build:
       context: ./frontend
-
     container_name: nutrihub-frontend
-
     depends_on:
       - backend
-
     ports:
       - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
 
 volumes:
   mariadb_data:
+  maven_cache:

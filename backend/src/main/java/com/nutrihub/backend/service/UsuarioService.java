@@ -97,6 +97,7 @@ public class UsuarioService {
         usuario.setTipo(Tipo_usuarios.COMUM);
         usuario.setStatus(Status_usuarios.ATIVO);
         usuario.setSoftdelete(false);
+        usuario.setQtSenha(request.senha().length());
 
         Usuario salvo = usuarioRepository.save(usuario);
 
@@ -107,7 +108,28 @@ public class UsuarioService {
             salvo.getDataNascimento(),
             salvo.getSexo(),
             salvo.getTipo(),
-            salvo.getStatus()
+            salvo.getStatus(),
+            salvo.getQtSenha()
+        );
+    }
+
+    public UsuarioResponse procurarInfos(String cpf){
+
+        Usuario usuario = usuarioRepository.findByCpf(cpf)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Usuário não encontrado"
+            ));
+
+        return new UsuarioResponse(
+            usuario.getCpf(),
+            usuario.getNome(),
+            usuario.getEmail(),
+            usuario.getDataNascimento(),
+            usuario.getSexo(),
+            usuario.getTipo(),
+            usuario.getStatus(),
+            usuario.getQtSenha()
         );
     }
 
@@ -226,6 +248,7 @@ public class UsuarioService {
             );
         }
 
+        usuario.setQtSenha(request.senha().length());
         usuario.setSenha(passwordEncoder.encode(request.senha()));
 
         usuarioRepository.save(usuario);

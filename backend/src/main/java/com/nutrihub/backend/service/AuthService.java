@@ -24,47 +24,46 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtEncoder jwtEncoder;
 
-    public AuthService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, JwtEncoder jwtEncoder) {
+    public AuthService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, JwtEncoder jwtEncoder){
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtEncoder = jwtEncoder;
     }
-
     public LoginResponse login(LoginRequest request) {
         Usuario usuario = usuarioRepository
-                .findByEmail(request.email())
-                .orElseThrow(() -> new BadCredentialsException("E-mail ou senha inválidos"));
-
+        .findByEmail(request.email())
+        .orElseThrow(() -> new BadCredentialsException("E-mail ou senha inválidos"));
+        
         if (!passwordEncoder.matches(
-                request.senha(), usuario.getSenha())) {
+            request.senha(), usuario.getSenha())) {
             throw new BadCredentialsException("E-mail ou senha inválidos");
         }
 
-        if (usuario.getStatus() != Status_usuarios.ATIVO
-                || Boolean.TRUE.equals(usuario.getSoftdelete())) {
-            throw new BadCredentialsException(
-                    "Conta indisponível");
+        if (usuario.getStatus() != Status_usuarios.ATIVO || Boolean.TRUE.equals(usuario.getSoftdelete())) {
+            throw new BadCredentialsException("Conta indisponível");
         }
 
         Instant agora = Instant.now();
         Instant expiracao = agora.plus(3, ChronoUnit.DAYS);
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuer("nutrihub")
-                .subject(usuario.getCpf())
-                .issuedAt(agora)
-                .expiresAt(expiracao)
-                .claim("email", usuario.getEmail())
-                .claim("role", usuario.getTipo().name())
-                .build();
+        .issuer("nutrihub")
+        .subject(usuario.getCpf())
+        .issuedAt(agora)
+        .expiresAt(expiracao)
+        .claim("email", usuario.getEmail())
+        .claim("role", usuario.getTipo().name())
+        .build();
 
         String token = jwtEncoder
-                .encode(JwtEncoderParameters.from(
-                        org.springframework.security.oauth2.jwt.JwsHeader
-                                .with(MacAlgorithm.HS256)
-                                .build(),
-                        claims))
-                .getTokenValue();
+        .encode(JwtEncoderParameters.from(
+                org.springframework.security.oauth2.jwt.JwsHeader
+                .with(MacAlgorithm.HS256)
+                .build(),
+        claims))
+        .getTokenValue();
+
+        usuario.setQtSenha(request.senha().length());
 
         return new LoginResponse(token, "Bearer", expiracao);
     }

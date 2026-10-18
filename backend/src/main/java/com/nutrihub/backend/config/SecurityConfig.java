@@ -78,8 +78,6 @@ public class SecurityConfig {
                     HttpMethod.POST, "/api/usuarios"
                 ).permitAll()
 
-                .requestMatchers(HttpMethod.GET,"/teste/getTeste").permitAll()
-
                 .anyRequest().authenticated()
             )   
             .httpBasic(basic -> basic.disable())

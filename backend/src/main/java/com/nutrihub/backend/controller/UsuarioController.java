@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpHeaders;
 
+
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -86,5 +87,15 @@ public class UsuarioController {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/infos")
+    public ResponseEntity<UsuarioResponse> getMethodName(Authentication authentication){
+        
+        String cpf = authentication.getName();
+
+        UsuarioResponse usuario = usuarioService.procurarInfos(cpf);
+
+        return ResponseEntity.ok(usuario);
     }
 }

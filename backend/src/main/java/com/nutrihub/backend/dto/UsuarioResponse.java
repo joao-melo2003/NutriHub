@@ -13,5 +13,6 @@ public record UsuarioResponse(
     LocalDate dataNascimento,
     Sexo_biologico sexo,
     Tipo_usuarios tipo,
-    Status_usuarios status
+    Status_usuarios status,
+    Integer qtSenha
 ) {}

@@ -6,16 +6,8 @@ RUN npm install -g pnpm@11.3.0
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-RUN pnpm --version
-
-RUN pnpm install --frozen-lockfile
-
-COPY . .
-
-ENV CI=true
-
-RUN pnpm build
+RUN pnpm install
 
 EXPOSE 3000
 
-CMD ["pnpm", "start"]
+CMD ["pnpm", "dev"]
