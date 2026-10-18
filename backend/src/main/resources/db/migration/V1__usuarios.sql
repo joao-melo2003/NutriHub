@@ -7,5 +7,5 @@ CREATE TABLE usuarios (
     `sexo` ENUM ('M', 'F') NOT NULL,
     `tipo` ENUM ('ADMIN', 'COMUM') NOT NULL,
     `status` ENUM ('ATIVO', 'BANIDO', 'DESATIVADO') NOT NULL,
-    `softdelete` BOOLEAN DEFAULT FALSE
+    softdelete BOOLEAN DEFAULT FALSE
 );
