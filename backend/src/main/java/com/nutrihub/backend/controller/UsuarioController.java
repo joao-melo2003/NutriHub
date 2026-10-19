@@ -90,7 +90,7 @@ public class UsuarioController {
     }
 
     @GetMapping("/infos")
-    public ResponseEntity<UsuarioResponse> getMethodName(Authentication authentication){
+    public ResponseEntity<UsuarioResponse> buscaInformacoes(Authentication authentication){
         
         String cpf = authentication.getName();
 

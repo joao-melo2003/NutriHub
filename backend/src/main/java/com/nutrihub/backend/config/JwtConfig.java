@@ -17,8 +17,7 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 public class JwtConfig {
 
     @Bean
-    public SecretKey jwtSecretKey(
-            @Value("${JWT_SECRET}") String secret) {
+    public SecretKey jwtSecretKey(@Value("${JWT_SECRET}") String secret) {
 
         byte[] decoded = Base64.getDecoder().decode(secret);
 

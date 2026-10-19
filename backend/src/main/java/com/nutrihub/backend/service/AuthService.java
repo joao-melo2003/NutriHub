@@ -29,11 +29,12 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.jwtEncoder = jwtEncoder;
     }
+    
     public LoginResponse login(LoginRequest request) {
         Usuario usuario = usuarioRepository
         .findByEmail(request.email())
         .orElseThrow(() -> new BadCredentialsException("E-mail ou senha inválidos"));
-        
+
         if (!passwordEncoder.matches(
             request.senha(), usuario.getSenha())) {
             throw new BadCredentialsException("E-mail ou senha inválidos");

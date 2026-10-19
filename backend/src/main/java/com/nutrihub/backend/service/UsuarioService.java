@@ -10,15 +10,21 @@ import com.nutrihub.backend.entity.Usuario;
 import com.nutrihub.backend.enums.Tipo_usuarios;
 import com.nutrihub.backend.enums.Status_usuarios;
 import com.nutrihub.backend.repository.UsuarioRepository;
+import com.nutrihub.backend.dto.UsuariosPorStatusResponse;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+
+import org.springframework.data.domain.Pageable;
 
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.time.LocalDate;
 
 
 @Service
@@ -55,7 +61,6 @@ public class UsuarioService {
     }
 
     public UsuarioResponse criarUsuarioComum(UsuarioRequest request) {
-
         if(usuarioRepository.existsByCpf(request.cpf())) {
             Usuario usuario = usuarioRepository.findByCpf(request.cpf()).orElse(null);
 
@@ -67,6 +72,12 @@ public class UsuarioService {
             }
 
             throw new ResponseStatusException(HttpStatus.CONFLICT,"CPF já cadastrado");
+        }
+
+        if(!(request.dataNascimento().getYear() >= 1930 && request.dataNascimento().getYear() <= LocalDate.now().getYear() - 16)){
+            if(LocalDate.now().getYear() <= 16 - request.dataNascimento().getYear()){
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O usuário tem ser maior de 16 anos");
+            }else throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O usuário já esta fazendo hora extra na terra!");
         }
 
         if (usuarioRepository.existsByEmail(request.email())) {
@@ -272,5 +283,44 @@ public class UsuarioService {
         usuario.setStatus(Status_usuarios.DESATIVADO);
 
         usuarioRepository.save(usuario);
+    }
+
+    public UsuariosPorStatusResponse tipoUsuario(String cpf,int paginaAtivos, int paginaBanidos, int paginaDesativados) {
+
+        Usuario usuario = usuarioRepository.findByCpf(cpf)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Usuario não existe"
+            ));
+
+        if (!Tipo_usuarios.ADMIN.equals(usuario.getTipo())) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN, "Sem permissão de administrador"
+            );
+        }
+
+        Pageable ativosPage = PageRequest.of(paginaAtivos, 10, Sort.by("nome").ascending());
+
+        Pageable banidosPage = PageRequest.of(paginaBanidos, 10, Sort.by("nome").ascending());
+
+        Pageable desativadosPage = PageRequest.of(paginaDesativados, 10, Sort.by("nome").ascending());
+
+        return new UsuariosPorStatusResponse(
+            usuarioRepository.findByTipoAndStatus(Tipo_usuarios.COMUM,Status_usuarios.ATIVO,ativosPage).map(this::paraResponse),
+            usuarioRepository.findByTipoAndStatus(Tipo_usuarios.COMUM,Status_usuarios.BANIDO,banidosPage).map(this::paraResponse),
+            usuarioRepository.findByTipoAndStatus(Tipo_usuarios.COMUM,Status_usuarios.DESATIVADO,desativadosPage).map(this::paraResponse)
+        );
+    }
+
+    private UsuarioResponse paraResponse(Usuario u) {
+        return new UsuarioResponse(
+            u.getCpf(),
+            u.getNome(),
+            u.getEmail(),
+            u.getDataNascimento(),
+            u.getSexo(),
+            u.getTipo(),
+            u.getStatus(),
+            u.getQtSenha()
+        );
     }
 }
