@@ -7,5 +7,6 @@ public enum Categoria_alimentos {
     FRUTAS,
     CARNES_OVOS,
     LATICINEOS,
-    OLEOS_GORDURASACUCARES
+    OLEOS_GORDURAS,
+    ACUCARES
 }

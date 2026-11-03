@@ -1,5 +1,8 @@
 package com.nutrihub.backend.controller;
 
+import com.nutrihub.backend.dto.AlimentoResponse;
+import com.nutrihub.backend.dto.AlimentosRequest;
+import com.nutrihub.backend.dto.AlimentosUpdateRequest;
 import com.nutrihub.backend.dto.BanirRequest;
 import com.nutrihub.backend.dto.LoginRequest;
 import com.nutrihub.backend.dto.LoginResponse;
@@ -28,6 +31,7 @@ import com.nutrihub.backend.dto.UsuarioResponse;
 import com.nutrihub.backend.service.AuthService;
 import com.nutrihub.backend.service.UsuarioService;
 
+
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
@@ -38,12 +42,25 @@ public class AdminController {
         this.usuarioService = usuarioService;
     }
 
+    private void verificaAdmin(Authentication authentication) {
+
+        String cpf = authentication.getName();
+        Tipo_usuarios tipo = usuarioService.tipoResponse(cpf);
+
+        if (!tipo.equals(Tipo_usuarios.ADMIN)) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "Apenas administradores podem realizar essa operação"
+            );
+        }
+    }
+
     /*
      * ?paginaAtivos=1&paginaBanidos=1
      * 
      * page 0 é a primeira página
      */
-    @GetMapping("/index")
+    @GetMapping("/indexUsuarios")
     public ResponseEntity<UsuariosPorStatusResponse> buscaUsuarios(Authentication authentication,
             @RequestParam(defaultValue = "0") int paginaAtivos,
             @RequestParam(defaultValue = "0") int paginaBanidos,
@@ -55,9 +72,7 @@ public class AdminController {
     }
 
     @GetMapping("/filtraNomes")
-    public ResponseEntity<Page<UsuarioResponse>> filtraNomes(Authentication authentication,
-            @RequestParam String nome,
-            @RequestParam(defaultValue = "0") int pagina) {
+    public ResponseEntity<Page<UsuarioResponse>> filtraNomes(Authentication authentication,@RequestParam String nome,@RequestParam(defaultValue = "0") int pagina) {
 
         String cpf = authentication.getName();
 
@@ -72,9 +87,7 @@ public class AdminController {
         String cpfAdmin = authentication.getName();
         Tipo_usuarios tipo = usuarioService.tipoResponse(cpfAdmin);
 
-        System.err.println(tipo + " aaaaaaaaa");
-
-        if (tipo.equals(Tipo_usuarios.ADMIN)) {
+        if(tipo.equals(Tipo_usuarios.ADMIN)) {
             usuarioService.banirUsuario(request.cpfUser());
             return ResponseEntity.ok().build();
         }
@@ -82,4 +95,57 @@ public class AdminController {
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Apenas administradores podem banir contas.");
     }
 
+    @PostMapping("/addAlimentos")
+    public ResponseEntity<Void> adicionaAlimento(Authentication authentication, @RequestBody AlimentosRequest request) {
+
+        String cpf = authentication.getName();
+        Tipo_usuarios tipo = usuarioService.tipoResponse(cpf);
+
+        if (tipo.equals(Tipo_usuarios.ADMIN)) {
+            usuarioService.criaAlimento(request);
+            return ResponseEntity.ok().build();
+        }
+
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Apenas administradores podem criar alimentos");
+    }
+    
+    @GetMapping("/indexAlimento")
+    public ResponseEntity<Page<AlimentoResponse>> indexAlimento(Authentication authentication, @RequestParam(defaultValue = "0") int pagina) {
+
+        verificaAdmin(authentication);
+
+        return ResponseEntity.ok(usuarioService.listaAlimentos(pagina));
+    }
+
+    @GetMapping("/infoAlimento/{id}")
+    public ResponseEntity<AlimentoResponse> infoAlimento(@PathVariable String id) {
+
+        return ResponseEntity.ok(usuarioService.infoAlimento(id));
+    }
+
+    @PatchMapping("/editarAlimento/{id}")
+    public ResponseEntity<Void> editarAlimento(Authentication authentication, @PathVariable String id, @Valid @RequestBody AlimentosUpdateRequest request) {
+
+        verificaAdmin(authentication);
+
+        usuarioService.editarAlimento(id, request);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/deletarAlimento/{id}")
+    public ResponseEntity<Void> deletarAlimento(Authentication authentication,@PathVariable String id) {
+
+        verificaAdmin(authentication);
+
+        usuarioService.deletarAlimento(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/buscaAlimentoNome")
+    public ResponseEntity<List<AlimentoResponse>> buscaAlimentoNome(@RequestParam String nome) {
+
+        return ResponseEntity.ok(usuarioService.buscaAlimentoNome(nome));
+    }
 }

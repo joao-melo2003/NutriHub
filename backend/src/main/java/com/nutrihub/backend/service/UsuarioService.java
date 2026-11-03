@@ -1,14 +1,19 @@
 package com.nutrihub.backend.service;
 
+import com.nutrihub.backend.dto.AlimentoResponse;
+import com.nutrihub.backend.dto.AlimentosRequest;
+import com.nutrihub.backend.dto.AlimentosUpdateRequest;
 import com.nutrihub.backend.dto.ExcluirContaRequest;
 import com.nutrihub.backend.dto.SenhaRequest;
 import com.nutrihub.backend.dto.UsuarioRequest;
 import com.nutrihub.backend.dto.UsuarioResponse;
 import com.nutrihub.backend.dto.UsuarioUpdateRequest;
 import com.nutrihub.backend.dto.UsuarioUpdateResponse;
+import com.nutrihub.backend.entity.Alimento;
 import com.nutrihub.backend.entity.Usuario;
 import com.nutrihub.backend.enums.Tipo_usuarios;
 import com.nutrihub.backend.enums.Status_usuarios;
+import com.nutrihub.backend.repository.AlimentoRepository;
 import com.nutrihub.backend.repository.UsuarioRepository;
 import com.nutrihub.backend.dto.UsuariosPorStatusResponse;
 
@@ -26,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import java.time.LocalDate;
 
@@ -34,6 +40,7 @@ import java.time.LocalDate;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final AlimentoRepository alimentoRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     private static final Pattern NOME_VALIDO = Pattern.compile("^[\\p{L}\\p{M}]+(?:[ '\\u2019-][\\p{L}\\p{M}]+)*$");
@@ -59,8 +66,9 @@ public class UsuarioService {
         "protonmail.com"
     );
 
-    public UsuarioService(UsuarioRepository usuarioRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository, AlimentoRepository alimentoRepository) {
         this.usuarioRepository = usuarioRepository;
+        this.alimentoRepository = alimentoRepository;
     }
 
 
@@ -114,7 +122,6 @@ public class UsuarioService {
         usuario.setDataNascimento(request.dataNascimento());
         usuario.setSexo(request.sexo());
 
-    
         usuario.setTipo(Tipo_usuarios.COMUM);
         usuario.setStatus(Status_usuarios.ATIVO);
         usuario.setSoftdelete(false);
@@ -369,9 +376,113 @@ public class UsuarioService {
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND, "Usuario não existe"
             ));
-            
+
         usuario.setStatus(Status_usuarios.BANIDO);
 
         usuarioRepository.save(usuario);
+    }
+
+   public void criaAlimento(AlimentosRequest request) {
+
+        Boolean flag = alimentoRepository.existsByNome(request.nome());
+
+        if(flag == true){
+            throw new ResponseStatusException(HttpStatus.CONFLICT,"Nome repetido");
+        }
+
+        Alimento alimento = new Alimento();
+
+        alimento.setId(UUID.randomUUID().toString());
+        alimento.setNome(request.nome());
+        alimento.setCategoria(request.categoria());
+        alimento.setCalorias(request.calorias());
+        alimento.setProteina(request.proteina());
+        alimento.setCarboidratos(request.carboidratos());
+        alimento.setGorduras(request.gorduras());
+
+        alimentoRepository.save(alimento);
+    }
+
+    public Page<AlimentoResponse> listaAlimentos(int pagina) {
+
+        Pageable pageable = PageRequest.of(pagina, 10);
+
+        return alimentoRepository.findAll(pageable).map(AlimentoResponse::fromEntity);
+    }
+
+    public AlimentoResponse infoAlimento(String id) {
+
+        Alimento alimento = alimentoRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Alimento não encontrado"
+            ));
+
+        return AlimentoResponse.fromEntity(alimento);
+    }
+
+    public void editarAlimento(String id, AlimentosUpdateRequest request) {
+
+        Alimento alimento = alimentoRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Alimento não encontrado"
+            ));
+
+        if (request.nome() != null) {
+
+            if (alimentoRepository.existsByNomeIgnoreCaseAndIdNot(
+                    request.nome(), id)) {
+
+                throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Já existe um alimento com esse nome"
+                );
+            }
+
+            alimento.setNome(request.nome());
+        }
+
+        if (request.categoria() != null) {
+            alimento.setCategoria(request.categoria());
+        }
+
+        if (request.calorias() != null) {
+            alimento.setCalorias(request.calorias());
+        }
+
+        if (request.proteina() != null) {
+            alimento.setProteina(request.proteina());
+        }
+
+        if (request.carboidratos() != null) {
+            alimento.setCarboidratos(request.carboidratos());
+        }
+
+        if (request.gorduras() != null) {
+            alimento.setGorduras(request.gorduras());
+        }
+
+        alimentoRepository.save(alimento);
+    }
+
+    public void deletarAlimento(String id) {
+
+        Alimento alimento = alimentoRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Alimento não encontrado"
+            ));
+
+        alimentoRepository.delete(alimento);
+    }
+
+    public List<AlimentoResponse> buscaAlimentoNome(String nome) {
+
+        return alimentoRepository
+            .findByNomeContainingIgnoreCaseOrderByNomeAsc(nome)
+            .stream()
+            .map(AlimentoResponse::fromEntity)
+            .toList();
     }
 }
