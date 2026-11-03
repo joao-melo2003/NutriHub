@@ -12,15 +12,18 @@ import com.nutrihub.backend.enums.Status_usuarios;
 import com.nutrihub.backend.repository.UsuarioRepository;
 import com.nutrihub.backend.dto.UsuariosPorStatusResponse;
 
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -58,6 +61,13 @@ public class UsuarioService {
 
     public UsuarioService(UsuarioRepository usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
+    }
+
+
+    public Tipo_usuarios tipoResponse(String CPF){
+        Usuario usuario = usuarioRepository.findByCpf(CPF).orElseThrow(() -> new BadCredentialsException("Usuário sem autenticação"));
+
+        return usuario.getTipo();
     }
 
     public UsuarioResponse criarUsuarioComum(UsuarioRequest request) {
@@ -322,5 +332,46 @@ public class UsuarioService {
             u.getStatus(),
             u.getQtSenha()
         );
+    }
+
+    public Page<UsuarioResponse> filtroNomeUsuarios(String nome, String cpf, int pagina) {
+
+        Usuario usuario = usuarioRepository.findByCpf(cpf)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Usuario não existe"
+            ));
+
+        if (!Tipo_usuarios.ADMIN.equals(usuario.getTipo())) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN, "Sem permissão de administrador"
+            );
+        }
+
+        Pageable pageable = PageRequest.of(pagina, 10);
+
+        Page<Usuario> usuarios = usuarioRepository.findByNomeStartingWithIgnoreCaseAndTipo(nome, Tipo_usuarios.COMUM, pageable);
+
+        return usuarios.map(u -> new UsuarioResponse(
+            u.getCpf(),
+            u.getNome(),
+            u.getEmail(),
+            u.getDataNascimento(),
+            u.getSexo(),
+            u.getTipo(),
+            u.getStatus(),
+            u.getQtSenha()
+        ));
+    }
+
+    public void banirUsuario(String cpf) {
+
+        Usuario usuario = usuarioRepository.findByCpf(cpf)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Usuario não existe"
+            ));
+            
+        usuario.setStatus(Status_usuarios.BANIDO);
+
+        usuarioRepository.save(usuario);
     }
 }

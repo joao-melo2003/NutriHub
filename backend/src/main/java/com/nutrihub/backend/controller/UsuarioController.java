@@ -6,13 +6,13 @@ import com.nutrihub.backend.dto.UsuarioRequest;
 import com.nutrihub.backend.dto.UsuarioResponse;
 import com.nutrihub.backend.dto.UsuarioUpdateRequest;
 import com.nutrihub.backend.dto.UsuarioUpdateResponse;
+import com.nutrihub.backend.enums.Tipo_usuarios;
 import com.nutrihub.backend.service.UsuarioService;
 
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpHeaders;
-
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -90,11 +90,20 @@ public class UsuarioController {
     }
 
     @GetMapping("/infos")
-    public ResponseEntity<UsuarioResponse> buscaInformacoes(Authentication authentication){
+    public ResponseEntity<UsuarioResponse> buscaInformacoes(Authentication authentication, @RequestParam(defaultValue = "") String infoUser){
         
-        String cpf = authentication.getName();
+        UsuarioResponse usuario = null;
 
-        UsuarioResponse usuario = usuarioService.procurarInfos(cpf);
+        String cpf = authentication.getName();
+        Tipo_usuarios tipo = usuarioService.tipoResponse(cpf);
+
+        if(tipo == Tipo_usuarios.ADMIN && !infoUser.isEmpty()){
+            usuario = usuarioService.procurarInfos(infoUser);
+        }else if(tipo == Tipo_usuarios.COMUM){
+            usuario = usuarioService.procurarInfos(cpf);
+        }else if (tipo == Tipo_usuarios.ADMIN && infoUser.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
 
         return ResponseEntity.ok(usuario);
     }

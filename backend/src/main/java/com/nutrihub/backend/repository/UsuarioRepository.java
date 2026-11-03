@@ -9,6 +9,8 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import java.util.List;
+
 
 public interface UsuarioRepository extends JpaRepository<Usuario, String> {
 
@@ -21,4 +23,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, String> {
     boolean existsByEmail(String email);
 
     Page<Usuario> findByTipoAndStatus(Tipo_usuarios tipo,Status_usuarios status,Pageable pageable);
+
+    Page<Usuario> findByNomeStartingWithIgnoreCaseAndTipo(String nome,Tipo_usuarios tipo,Pageable pageable);
 }
