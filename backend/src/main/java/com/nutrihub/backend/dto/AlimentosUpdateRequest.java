@@ -12,7 +12,7 @@ public record AlimentosUpdateRequest(
 
     @NotBlank
     @Size(min = 2, max = 255)
-    @Pattern(regexp = "^[\\p{L}][\\p{L}\\p{M}_]*$")
+    @Pattern(regexp = "^[\\p{L}\\p{M}]+(?: [\\p{L}\\p{M}]+)*$")
     String nome,
 
     Categoria_alimentos categoria,

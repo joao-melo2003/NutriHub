@@ -25,7 +25,7 @@ public class CorsConfig {
         );
 
         config.setAllowedHeaders(
-            List.of("Content-Type", "Authorization", "X-XSRF-TOKEN")
+            List.of("Content-Type", "Authorization", "X-XSRF-TOKEN", "Accept")
         );
 
         config.setAllowCredentials(true);

@@ -6,8 +6,12 @@ import com.nutrihub.backend.dto.AlimentosUpdateRequest;
 import com.nutrihub.backend.dto.BanirRequest;
 import com.nutrihub.backend.dto.LoginRequest;
 import com.nutrihub.backend.dto.LoginResponse;
+import com.nutrihub.backend.dto.RestricaoRequest;
+import com.nutrihub.backend.dto.RestricaoResponse;
+import com.nutrihub.backend.dto.RestricaoUpdateRequest;
 import com.nutrihub.backend.dto.UsuarioResponse;
 import com.nutrihub.backend.dto.UsuariosPorStatusResponse;
+import com.nutrihub.backend.enums.Tipo_restricoes;
 import com.nutrihub.backend.enums.Tipo_usuarios;
 import com.nutrihub.backend.repository.UsuarioRepository;
 
@@ -148,4 +152,64 @@ public class AdminController {
 
         return ResponseEntity.ok(usuarioService.buscaAlimentoNome(nome));
     }
+
+    @PostMapping("/addRestricao")
+    public ResponseEntity<Void> adicionaRestricao(
+            Authentication authentication,
+            @Valid @RequestBody RestricaoRequest request) {
+
+        verificaAdmin(authentication);
+
+        usuarioService.criaRestricao(request);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/indexRestricao")
+    public ResponseEntity<Page<RestricaoResponse>> indexRestricao(Authentication authentication, @RequestParam(defaultValue = "0") int pagina) {
+
+        verificaAdmin(authentication);
+
+        return ResponseEntity.ok(usuarioService.listaRestricoes(pagina));
+    }
+
+    @GetMapping("/infoRestricao/{id}")
+    public ResponseEntity<RestricaoResponse> infoRestricao(
+            @PathVariable String id) {
+
+        return ResponseEntity.ok(usuarioService.infoRestricao(id));
+    }
+
+    @PatchMapping("/editarRestricao/{id}")
+    public ResponseEntity<Void> editarRestricao(Authentication authentication,@PathVariable String id, @Valid @RequestBody RestricaoUpdateRequest request) {
+
+        verificaAdmin(authentication);
+
+        usuarioService.editarRestricao(id, request);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/deletarRestricao/{id}")
+    public ResponseEntity<Void> deletarRestricao(Authentication authentication, @PathVariable String id) {
+
+        verificaAdmin(authentication);
+
+        usuarioService.deletarRestricao(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/buscaRestricao")
+    public ResponseEntity<Page<RestricaoResponse>> buscaRestricao(
+            @RequestParam(required = false) String nome,
+            @RequestParam(required = false) Tipo_restricoes tipo,
+            @RequestParam(defaultValue = "0") int pagina) {
+
+        return ResponseEntity.ok(
+            usuarioService.buscaRestricao(nome, tipo, pagina)
+        );
+    }
+
+
 }

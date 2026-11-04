@@ -4,16 +4,22 @@ import com.nutrihub.backend.dto.AlimentoResponse;
 import com.nutrihub.backend.dto.AlimentosRequest;
 import com.nutrihub.backend.dto.AlimentosUpdateRequest;
 import com.nutrihub.backend.dto.ExcluirContaRequest;
+import com.nutrihub.backend.dto.RestricaoRequest;
+import com.nutrihub.backend.dto.RestricaoResponse;
+import com.nutrihub.backend.dto.RestricaoUpdateRequest;
 import com.nutrihub.backend.dto.SenhaRequest;
 import com.nutrihub.backend.dto.UsuarioRequest;
 import com.nutrihub.backend.dto.UsuarioResponse;
 import com.nutrihub.backend.dto.UsuarioUpdateRequest;
 import com.nutrihub.backend.dto.UsuarioUpdateResponse;
 import com.nutrihub.backend.entity.Alimento;
+import com.nutrihub.backend.entity.Restricao;
 import com.nutrihub.backend.entity.Usuario;
 import com.nutrihub.backend.enums.Tipo_usuarios;
 import com.nutrihub.backend.enums.Status_usuarios;
+import com.nutrihub.backend.enums.Tipo_restricoes;
 import com.nutrihub.backend.repository.AlimentoRepository;
+import com.nutrihub.backend.repository.RestricoesRepository;
 import com.nutrihub.backend.repository.UsuarioRepository;
 import com.nutrihub.backend.dto.UsuariosPorStatusResponse;
 
@@ -41,6 +47,7 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final AlimentoRepository alimentoRepository;
+    private final RestricoesRepository restricoesRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     private static final Pattern NOME_VALIDO = Pattern.compile("^[\\p{L}\\p{M}]+(?:[ '\\u2019-][\\p{L}\\p{M}]+)*$");
@@ -66,9 +73,10 @@ public class UsuarioService {
         "protonmail.com"
     );
 
-    public UsuarioService(UsuarioRepository usuarioRepository, AlimentoRepository alimentoRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository, AlimentoRepository alimentoRepository, RestricoesRepository restricoesRepository) {
         this.usuarioRepository = usuarioRepository;
         this.alimentoRepository = alimentoRepository;
+        this.restricoesRepository = restricoesRepository;
     }
 
 
@@ -283,18 +291,20 @@ public class UsuarioService {
     }
 
     public void excluirConta(String cpf, ExcluirContaRequest request) {
-        if (!request.confirm()) {
-            throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "É necessário confirmar a exclusão da conta"
-            );
-        }
-
         Usuario usuario = usuarioRepository.findByCpf(cpf)
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND,
                 "Usuário não encontrado"
             ));
+            
+        if(usuario.getTipo().equals(Tipo_usuarios.ADMIN)){
+            throw new BadCredentialsException("Não é possível deletar uma conta de um administrador");
+        }
+
+        if (!passwordEncoder.matches(
+            request.senha(), usuario.getSenha())) {
+            throw new BadCredentialsException("Senha invalida, digite a senha corretamente para excluir a conta");
+        }
 
         usuario.setSoftdelete(true);
         usuario.setStatus(Status_usuarios.DESATIVADO);
@@ -484,5 +494,105 @@ public class UsuarioService {
             .stream()
             .map(AlimentoResponse::fromEntity)
             .toList();
+    }
+
+
+    public void criaRestricao(RestricaoRequest request) {
+
+        if (restricoesRepository.findByNomeIgnoreCase(request.nome()).isPresent()) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Já existe uma restrição com esse nome"
+            );
+        }
+
+        Restricao restricao = new Restricao();
+
+        restricao.setId(UUID.randomUUID().toString());
+        restricao.setNome(request.nome());
+        restricao.setTipo(request.tipo());
+
+        restricoesRepository.save(restricao);
+    }
+
+    public Page<RestricaoResponse> listaRestricoes(int pagina) {
+
+        Pageable pageable = PageRequest.of(pagina, 10);
+
+        return restricoesRepository.findAll(pageable)
+            .map(RestricaoResponse::fromEntity);
+    }
+
+    public RestricaoResponse infoRestricao(String id) {
+
+        Restricao restricao = restricoesRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Restrição não encontrada"
+            ));
+
+        return RestricaoResponse.fromEntity(restricao);
+    }
+
+    public void editarRestricao(String id, RestricaoUpdateRequest request) {
+
+        Restricao restricao = restricoesRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Restrição não encontrada"
+                ));
+
+            if (request.nome() != null) {
+
+                if (restricoesRepository.existsByNomeIgnoreCaseAndIdNot(
+                        request.nome(), id)) {
+
+                    throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Já existe uma restrição com esse nome"
+                    );
+                }
+
+                restricao.setNome(request.nome());
+            }
+
+            if (request.tipo() != null) {
+                restricao.setTipo(request.tipo());
+            }
+
+            if (request.nome() != null || request.tipo() != null) {
+                restricoesRepository.save(restricao);
+            }
+    }
+
+    public void deletarRestricao(String id) {
+
+        Restricao restricao = restricoesRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Restrição não encontrada"
+            ));
+
+        restricoesRepository.delete(restricao);
+    }
+
+    public Page<RestricaoResponse> buscaRestricao(String nome, Tipo_restricoes tipo, int pagina) {
+
+        Pageable pageable = PageRequest.of(pagina, 10);
+
+        Page<Restricao> restricoes;
+
+        if (nome != null && tipo != null) {
+            restricoes = restricoesRepository.findByNomeStartingWithIgnoreCaseAndTipoOrderByNomeAsc(nome, tipo, pageable);
+        } else if (nome != null) {
+            restricoes = restricoesRepository.findByNomeStartingWithIgnoreCaseOrderByNomeAsc(nome, pageable);
+        } else if (tipo != null) {
+            restricoes = restricoesRepository.findByTipo(tipo, pageable);
+
+        } else {
+            restricoes = restricoesRepository.findAll(pageable);
+        }
+
+        return restricoes.map(RestricaoResponse::fromEntity);
     }
 }
