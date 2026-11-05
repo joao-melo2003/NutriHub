@@ -542,7 +542,6 @@ public class UsuarioService {
             .toList();
     }
 
-
     public void criaRestricao(RestricaoRequest request) {
 
         if (restricoesRepository.findByNomeIgnoreCase(request.nome()).isPresent()) {

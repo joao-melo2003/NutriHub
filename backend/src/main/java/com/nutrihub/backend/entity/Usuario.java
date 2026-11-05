@@ -57,4 +57,7 @@ public class Usuario {
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
     private List<RestricoesAlimentares> restricoesAlimentares;
 
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+    private List<PreferenciasAlimentares> preferenciasAlimentares;
+
 }

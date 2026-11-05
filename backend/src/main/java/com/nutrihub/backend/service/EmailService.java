@@ -50,10 +50,7 @@ public class EmailService {
         );
     }
 
-    public void enviarEmailRecuperacaoSenha(
-            Usuario usuario,
-            String token
-    ) {
+    public void enviarEmailRecuperacaoSenha(Usuario usuario,String token) {
 
         String link = frontendUrl.replaceAll("/$", "")
                 + "/auth/password-reset?token=" + token;
@@ -71,12 +68,7 @@ public class EmailService {
         );
     }
 
-    private void enviar(
-            String destinatario,
-            String assunto,
-            String template,
-            Context context
-    ) {
+    private void enviar(String destinatario,String assunto,String template,Context context) {
 
         String html = templateEngine.process(template, context);
 

@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 @Getter 
@@ -35,4 +36,7 @@ public class Alimento {
 
     @Column(name = "gorduras", nullable = false, precision = 6, scale = 2)
     private BigDecimal gorduras;
+
+    @OneToMany(mappedBy = "alimento", cascade = CascadeType.ALL)
+    private List<PreferenciasAlimentares> preferenciasAlimentares;
 }
