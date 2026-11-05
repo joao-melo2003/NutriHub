@@ -8,5 +8,6 @@ CREATE TABLE usuarios (
     `tipo` ENUM ('ADMIN', 'COMUM') NOT NULL,
     `status` ENUM ('ATIVO', 'BANIDO', 'DESATIVADO') NOT NULL,
     softdelete BOOLEAN DEFAULT FALSE,
-    qtsenha INT NOT NULL
+    qtsenha INT NOT NULL,
+    emailVerificado BOOLEAN DEFAULT FALSE
 );

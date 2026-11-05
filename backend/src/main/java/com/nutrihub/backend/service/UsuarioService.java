@@ -21,6 +21,9 @@ import com.nutrihub.backend.enums.Tipo_restricoes;
 import com.nutrihub.backend.repository.AlimentoRepository;
 import com.nutrihub.backend.repository.RestricoesRepository;
 import com.nutrihub.backend.repository.UsuarioRepository;
+
+import jakarta.transaction.Transactional;
+
 import com.nutrihub.backend.dto.UsuariosPorStatusResponse;
 
 import org.springframework.security.authentication.BadCredentialsException;
@@ -48,6 +51,8 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final AlimentoRepository alimentoRepository;
     private final RestricoesRepository restricoesRepository;
+    private final EmailVerificacaoService emailVerificacaoService;
+    private final PasswordService passwordService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     private static final Pattern NOME_VALIDO = Pattern.compile("^[\\p{L}\\p{M}]+(?:[ '\\u2019-][\\p{L}\\p{M}]+)*$");
@@ -73,10 +78,12 @@ public class UsuarioService {
         "protonmail.com"
     );
 
-    public UsuarioService(UsuarioRepository usuarioRepository, AlimentoRepository alimentoRepository, RestricoesRepository restricoesRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository, AlimentoRepository alimentoRepository, RestricoesRepository restricoesRepository, EmailVerificacaoService emailVerificacaoService, PasswordService passwordService) {
         this.usuarioRepository = usuarioRepository;
         this.alimentoRepository = alimentoRepository;
         this.restricoesRepository = restricoesRepository;
+        this.emailVerificacaoService = emailVerificacaoService;
+        this.passwordService = passwordService;
     }
 
 
@@ -86,6 +93,7 @@ public class UsuarioService {
         return usuario.getTipo();
     }
 
+    @Transactional
     public UsuarioResponse criarUsuarioComum(UsuarioRequest request) {
         if(usuarioRepository.existsByCpf(request.cpf())) {
             Usuario usuario = usuarioRepository.findByCpf(request.cpf()).orElse(null);
@@ -134,8 +142,11 @@ public class UsuarioService {
         usuario.setStatus(Status_usuarios.ATIVO);
         usuario.setSoftdelete(false);
         usuario.setQtSenha(request.senha().length());
+        usuario.setEmailVerificado(false);
 
         Usuario salvo = usuarioRepository.save(usuario);
+
+        emailVerificacaoService.criarEEnviar(salvo);
 
         return new UsuarioResponse(
             salvo.getCpf(),
@@ -147,6 +158,41 @@ public class UsuarioService {
             salvo.getStatus(),
             salvo.getQtSenha()
         );
+    }
+
+    public void solicitarRecuperacaoSenha(String cpf,String email) {
+
+        Usuario usuario = usuarioRepository.findById(cpf)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Usuário não encontrado"
+                ));
+
+        if(usuario.getStatus() != Status_usuarios.ATIVO) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Esta conta não está ativa"
+            );
+        }
+
+        if(!Boolean.TRUE.equals(usuario.getEmailVerificado())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "O e-mail da conta não foi verificado"
+            );
+        }
+
+        if (!usuario.getEmail().equalsIgnoreCase(email)) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "O e-mail informado não corresponde à conta"
+            );
+        }
+
+        passwordService.enviarEmailRecuperacao(usuario);
     }
 
     public UsuarioResponse procurarInfos(String cpf){

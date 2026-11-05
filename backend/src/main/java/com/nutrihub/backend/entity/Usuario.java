@@ -45,6 +45,9 @@ public class Usuario {
     @Column(name = "qtsenha", nullable = false)
     private Integer qtSenha;
 
+    @Column(name = "emailVerificado")
+    private Boolean emailVerificado;
+
     public Usuario() {
     }
 
@@ -113,7 +116,7 @@ public class Usuario {
     }
 
     public Boolean getSoftdelete() {
-        return softdelete;
+        return this.softdelete;
     }
 
     public void setSoftdelete(Boolean softdelete) {
@@ -126,5 +129,13 @@ public class Usuario {
 
     public void setQtSenha(Integer qtSenha){
         this.qtSenha = qtSenha;
+    }
+
+    public Boolean getEmailVerificado() {
+        return this.emailVerificado;
+    }
+
+    public void setEmailVerificado(Boolean emailVerificado) {
+        this.emailVerificado = emailVerificado;
     }
 }

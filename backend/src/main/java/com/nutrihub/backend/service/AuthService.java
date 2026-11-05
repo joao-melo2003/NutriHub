@@ -32,9 +32,14 @@ public class AuthService {
     }
     
     public LoginResponse login(LoginRequest request) {
+
         Usuario usuario = usuarioRepository
         .findByEmail(request.email())
         .orElseThrow(() -> new BadCredentialsException("E-mail ou senha inválidos"));
+
+        if(!usuario.getEmailVerificado()){
+            throw new BadCredentialsException("Verifique o email enviado para completar o login");
+        }
 
         if (!passwordEncoder.matches(
             request.senha(), usuario.getSenha())) {

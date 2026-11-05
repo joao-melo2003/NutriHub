@@ -66,6 +66,12 @@ public class SecurityConfig {
                     HttpMethod.GET, "/api/auth/csrf"
                 ).permitAll()
 
+                .requestMatchers(HttpMethod.POST, "/api/auth/password/forgot").permitAll()
+
+                .requestMatchers(HttpMethod.POST,"/api/auth/email/confirmar").permitAll()
+
+                .requestMatchers(HttpMethod.POST, "/api/auth/password/reset").permitAll()
+
                 .requestMatchers(
                     HttpMethod.POST, "/api/auth/logout"
                 ).authenticated()
@@ -75,7 +81,7 @@ public class SecurityConfig {
                 ).permitAll()
 
                 .requestMatchers(
-                    HttpMethod.POST, "/api/usuarios"
+                    HttpMethod.POST, "/api/usuarios/cadastrar"
                 ).permitAll()
 
                 .anyRequest().authenticated()

@@ -27,12 +27,18 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
     depends_on:
       database:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     ports:
       - "8080:8080"
-
     volumes:
       - ./backend:/app
       - maven_cache:/root/.m2
@@ -51,6 +57,13 @@ services:
       - /app/.next
     env_file:
     - .env
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: nutrihub-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
 volumes:
   mariadb_data:

@@ -30,7 +30,7 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
-    @PostMapping
+    @PostMapping("/cadastrar")
     public ResponseEntity<UsuarioResponse> cadastro(@Valid @RequestBody UsuarioRequest request) {
 
         UsuarioResponse usuario = usuarioService.criarUsuarioComum(request);
