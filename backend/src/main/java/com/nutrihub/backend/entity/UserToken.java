@@ -15,8 +15,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
+@Getter 
+@Setter
 @Table(name = "user_tokens")
 public class UserToken {
 
@@ -40,53 +44,5 @@ public class UserToken {
 
     @Column(name = "used_at")
     private LocalDateTime usedAt;
-    
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Usuario getUsuario() {
-        return usuario;
-    }
-
-    public void setUsuario(Usuario usuario) {
-        this.usuario = usuario;
-    }
-
-    public Tipo_token getTipo(){
-        return this.tipo;
-    }
-
-    public void setTipo(Tipo_token tipo){
-        this.tipo = tipo;
-    }
-
-    public String getTokenHash() {
-        return tokenHash;
-    }
-
-    public void setTokenHash(String tokenHash) {
-        this.tokenHash = tokenHash;
-    }
-
-    public LocalDateTime getExpiresAt() {
-        return expiresAt;
-    }
-
-    public void setExpiresAt(LocalDateTime expiresAt) {
-        this.expiresAt = expiresAt;
-    }
-
-    public LocalDateTime getUsedAt() {
-        return usedAt;
-    }
-
-    public void setUsedAt(LocalDateTime usedAt) {
-        this.usedAt = usedAt;
-    }
-    
+        
 }

@@ -63,21 +63,13 @@ public class TokenService {
     }
 
     @Transactional
-    public String criarToken(
-            Usuario usuario,
-            Tipo_token tipo,
-            Duration validade
-    ) {
+    public String criarToken(Usuario usuario,Tipo_token tipo,Duration validade){
 
         LocalDateTime agora = LocalDateTime.now();
 
         if (tipo == Tipo_token.EMAIL_VERIFICATION) {
 
-            tokenRepository.excluirTokensExpiradosENaoUtilizados(
-                    usuario.getCpf(),
-                    Tipo_token.EMAIL_VERIFICATION,
-                    agora
-            );
+            tokenRepository.excluirTokensExpiradosENaoUtilizados(usuario.getCpf(),Tipo_token.EMAIL_VERIFICATION,agora);
         }
 
         String token = gerarToken();
@@ -94,10 +86,7 @@ public class TokenService {
         return token;
     }
 
-    public UserToken buscarTokenValido(
-            String token,
-            Tipo_token tipo
-    ) {
+    public UserToken buscarTokenValido(String token,Tipo_token tipo) {
 
         String hash = gerarHash(token);
 

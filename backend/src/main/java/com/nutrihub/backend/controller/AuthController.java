@@ -141,8 +141,6 @@ public class AuthController {
 
         passwordService.redefinirSenha(request.token(),request.novaSenha());
 
-        return ResponseEntity.ok(
-                Map.of("message", "Senha alterada com sucesso!")
-        );
+        return ResponseEntity.ok(Map.of("message", "Senha alterada com sucesso!"));
     }
 }

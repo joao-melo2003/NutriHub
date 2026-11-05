@@ -1,13 +1,19 @@
 package com.nutrihub.backend.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDate;
+import java.util.List;
 
 import com.nutrihub.backend.enums.Sexo_biologico;
 import com.nutrihub.backend.enums.Tipo_usuarios;
 import com.nutrihub.backend.enums.Status_usuarios;
 
-@Entity 
+@Entity
+@Getter 
+@Setter
 @Table(name = "usuarios")
 public class Usuario {
     
@@ -48,94 +54,7 @@ public class Usuario {
     @Column(name = "emailVerificado")
     private Boolean emailVerificado;
 
-    public Usuario() {
-    }
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+    private List<RestricoesAlimentares> restricoesAlimentares;
 
-    public String getCpf() {
-        return cpf;
-    }
-
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
-    }
-
-    public String getNome() {
-        return nome;
-    }
-
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getSenha() {
-        return senha;
-    }
-
-    public void setSenha(String senha) {
-        this.senha = senha;
-    }
-
-    public LocalDate getDataNascimento() {
-        return dataNascimento;
-    }
-
-    public void setDataNascimento(LocalDate dataNascimento) {
-        this.dataNascimento = dataNascimento;
-    }
-
-    public Sexo_biologico getSexo() {
-        return sexo;
-    }
-
-    public void setSexo(Sexo_biologico sexo) {
-        this.sexo = sexo;
-    }
-
-    public Tipo_usuarios getTipo() {
-        return tipo;
-    }
-
-    public void setTipo(Tipo_usuarios tipo) {
-        this.tipo = tipo;
-    }
-
-    public Status_usuarios getStatus() {
-        return status;
-    }
-
-    public void setStatus(Status_usuarios status) {
-        this.status = status;
-    }
-
-    public Boolean getSoftdelete() {
-        return this.softdelete;
-    }
-
-    public void setSoftdelete(Boolean softdelete) {
-        this.softdelete = softdelete;
-    }
-
-    public Integer getQtSenha(){
-        return qtSenha;
-    }
-
-    public void setQtSenha(Integer qtSenha){
-        this.qtSenha = qtSenha;
-    }
-
-    public Boolean getEmailVerificado() {
-        return this.emailVerificado;
-    }
-
-    public void setEmailVerificado(Boolean emailVerificado) {
-        this.emailVerificado = emailVerificado;
-    }
 }
