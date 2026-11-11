@@ -116,8 +116,6 @@ public class AdminController {
     @GetMapping("/indexAlimento")
     public ResponseEntity<Page<AlimentoResponse>> indexAlimento(Authentication authentication, @RequestParam(defaultValue = "0") int pagina) {
 
-        verificaAdmin(authentication);
-
         return ResponseEntity.ok(usuarioService.listaAlimentos(pagina));
     }
 

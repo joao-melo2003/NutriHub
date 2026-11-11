@@ -12,8 +12,6 @@ import org.springframework.security.oauth2.server.resource.web.BearerTokenResolv
 import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.config.Customizer;
 
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-
 @Configuration
 public class SecurityConfig {
 
@@ -49,41 +47,20 @@ public class SecurityConfig {
             throws Exception {
 
         http
-            .csrf(csrf -> csrf
-                .csrfTokenRepository(
-                    CookieCsrfTokenRepository.withHttpOnlyFalse()
-                )
-                .csrfTokenRequestHandler(
-                    new SpaCsrfTokenRequestHandler()
-                )
-            )
+            .csrf(csrf -> csrf.disable())
+            
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .cors(Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    HttpMethod.GET, "/api/auth/csrf"
-                ).permitAll()
-
+                .requestMatchers(HttpMethod.GET, "/api/auth/csrf").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/password/forgot").permitAll()
-
-                .requestMatchers(HttpMethod.POST,"/api/auth/email/confirmar").permitAll()
-
+                .requestMatchers(HttpMethod.POST, "/api/auth/email/confirmar").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/password/reset").permitAll()
-
-                .requestMatchers(
-                    HttpMethod.POST, "/api/auth/logout"
-                ).authenticated()
-
-                .requestMatchers(
-                    HttpMethod.POST, "/api/auth/login"
-                ).permitAll()
-
-                .requestMatchers(
-                    HttpMethod.POST, "/api/usuarios/cadastrar"
-                ).permitAll()
-
+                .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/usuarios/cadastrar").permitAll()
                 .anyRequest().authenticated()
             )   
             .httpBasic(basic -> basic.disable())

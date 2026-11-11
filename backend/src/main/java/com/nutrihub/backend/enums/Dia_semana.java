@@ -1,0 +1,11 @@
+package com.nutrihub.backend.enums;
+
+public enum Dia_semana {
+    SEGUNDA,
+    TERCA,
+    QUARTA,
+    QUINTA,
+    SEXTA,
+    SABADO,
+    DOMINGO
+}

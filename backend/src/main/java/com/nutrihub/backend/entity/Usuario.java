@@ -1,6 +1,6 @@
 package com.nutrihub.backend.entity;
 
-import jakarta.persistence.*;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,6 +9,17 @@ import java.util.List;
 
 import com.nutrihub.backend.enums.Sexo_biologico;
 import com.nutrihub.backend.enums.Tipo_usuarios;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+
 import com.nutrihub.backend.enums.Status_usuarios;
 
 @Entity
@@ -59,5 +70,11 @@ public class Usuario {
 
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
     private List<PreferenciasAlimentares> preferenciasAlimentares;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+    private List<UserToken> userTokens;
+
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL)
+    private Rotinas rotinas;
 
 }

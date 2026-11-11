@@ -1,7 +1,14 @@
 package com.nutrihub.backend.entity;
 
 import com.nutrihub.backend.enums.Categoria_alimentos;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -39,4 +46,7 @@ public class Alimento {
 
     @OneToMany(mappedBy = "alimento", cascade = CascadeType.ALL)
     private List<PreferenciasAlimentares> preferenciasAlimentares;
+
+    @OneToMany(mappedBy = "alimento", cascade = CascadeType.ALL)
+    private List<RotinaRefeicaoAlimentos> rotinaRefeicaoAlimentos;
 }

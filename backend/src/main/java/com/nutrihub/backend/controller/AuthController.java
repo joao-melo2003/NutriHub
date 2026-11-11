@@ -17,7 +17,6 @@ import com.nutrihub.backend.service.UsuarioService;
 
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.csrf.CsrfToken;
 import java.util.Map;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -74,12 +73,6 @@ public class AuthController {
                     "message", "Login realizado com sucesso",
                     "expiresAt", login.expiresAt()
                 ));
-    }
-    
-
-    @GetMapping("/csrf")
-    public Map<String, String> csrf(CsrfToken csrfToken) {
-        return Map.of("token", csrfToken.getToken());
     }
 
     @PostMapping("/logout")

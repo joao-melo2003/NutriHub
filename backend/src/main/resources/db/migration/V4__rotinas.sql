@@ -1,6 +1,6 @@
 CREATE TABLE rotinas (
     id VARCHAR(255) PRIMARY KEY NOT NULL,
-    id_usuario CHAR(11) NOT NULL,
+    id_usuario CHAR(11) NOT NULL UNIQUE,
     objetivo ENUM('GANHO_MASSA', 'PERDA_PESO', 'MANUTENCAO') NOT NULL,
     peso NUMERIC(5, 2) NOT NULL,
     altura NUMERIC(4, 2) NOT NULL,
