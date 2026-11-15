@@ -1,33 +1,39 @@
 package com.nutrihub.backend.controller;
 
 import com.nutrihub.backend.dto.ExcluirContaRequest;
+import com.nutrihub.backend.dto.RotinaUsuarioResultado;
 import com.nutrihub.backend.dto.SenhaRequest;
 import com.nutrihub.backend.dto.UsuarioRequest;
 import com.nutrihub.backend.dto.UsuarioResponse;
 import com.nutrihub.backend.dto.UsuarioUpdateRequest;
 import com.nutrihub.backend.dto.UsuarioUpdateResponse;
 import com.nutrihub.backend.enums.Tipo_usuarios;
+import com.nutrihub.backend.service.RotinaService;
 import com.nutrihub.backend.service.UsuarioService;
 
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/usuarios")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+    private final RotinaService rotinaService;
 
-    public UsuarioController(UsuarioService usuarioService) {
+    public UsuarioController(UsuarioService usuarioService, RotinaService rotinaFormsService) {
         this.usuarioService = usuarioService;
+        this.rotinaService = rotinaFormsService;
     }
 
     @PostMapping("/cadastrar")
@@ -106,5 +112,45 @@ public class UsuarioController {
         }
 
         return ResponseEntity.ok(usuario);
+    }
+
+    @GetMapping("/AddRotinaUsuario")
+    public ResponseEntity<?> rotinaUsuario(Authentication authentication) {
+
+        String cpf = authentication.getName();
+
+        RotinaUsuarioResultado resultado = rotinaService.verificarRotinaUsuario(cpf);
+
+        if ("usuario sem rotina".equals(resultado.mensagem())) {
+
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                Map.of(
+                    "message", "usuario sem rotina",
+                    "error", 404
+                )
+            );
+        }
+
+        if ("rotina corrompida".equals(resultado.mensagem())) {
+
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                Map.of(
+                    "message", "rotina corrompida",
+                    "error", 409
+                )
+            );
+        }
+
+        return ResponseEntity.ok(resultado.rotina());
+    }
+
+    @DeleteMapping("/DeletaRotinaUsuario")
+    public ResponseEntity<Void> excluirRotina(Authentication authentication,@RequestParam boolean confirmar) {
+
+        String cpf = authentication.getName();
+
+        rotinaService.excluirRotina(cpf, confirmar);
+
+        return ResponseEntity.noContent().build();
     }
 }

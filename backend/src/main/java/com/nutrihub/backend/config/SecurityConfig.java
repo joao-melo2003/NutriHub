@@ -61,6 +61,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/usuarios/cadastrar").permitAll()
+                .requestMatchers("/actuator/mappings").permitAll()
                 .anyRequest().authenticated()
             )   
             .httpBasic(basic -> basic.disable())

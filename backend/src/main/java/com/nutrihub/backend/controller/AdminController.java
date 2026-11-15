@@ -152,9 +152,7 @@ public class AdminController {
     }
 
     @PostMapping("/addRestricao")
-    public ResponseEntity<Void> adicionaRestricao(
-            Authentication authentication,
-            @Valid @RequestBody RestricaoRequest request) {
+    public ResponseEntity<Void> adicionaRestricao(Authentication authentication, @Valid @RequestBody RestricaoRequest request) {
 
         verificaAdmin(authentication);
 
@@ -165,8 +163,6 @@ public class AdminController {
 
     @GetMapping("/indexRestricao")
     public ResponseEntity<Page<RestricaoResponse>> indexRestricao(Authentication authentication, @RequestParam(defaultValue = "0") int pagina) {
-
-        verificaAdmin(authentication);
 
         return ResponseEntity.ok(usuarioService.listaRestricoes(pagina));
     }

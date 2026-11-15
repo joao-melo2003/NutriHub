@@ -26,5 +26,12 @@ spring:
           auth: false
           starttls:
             enable: false
+
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: mappings

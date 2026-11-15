@@ -1,0 +1,13 @@
+package com.nutrihub.backend.dto;
+
+import java.util.List;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+public record RestricoesAlimentaresRequest(
+
+    @NotNull
+    List<@NotBlank String> restricoes
+
+) {}
