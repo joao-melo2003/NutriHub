@@ -13,6 +13,7 @@ import com.nutrihub.backend.dto.*;
 import com.nutrihub.backend.entity.*;
 import com.nutrihub.backend.enums.*;
 import com.nutrihub.backend.repository.*;
+import com.nutrihub.backend.validation.GeradorRotinaValidation;
 
 @Service
 public class RotinaService {
@@ -27,6 +28,7 @@ public class RotinaService {
     private final AlimentoRepository alimentoRepository;
     private final RotinaRefeicoesRepository rotinaRefeicoesRepository;
     private final RotinaRefeicaoAlimentosRepository rotinaRefeicaoAlimentosRepository;
+    private final GeradorRotinaValidation geradorRotinaValidation;
 
     public RotinaService(
             RotinaRepository rotinaRepository,
@@ -39,8 +41,8 @@ public class RotinaService {
             AlimentoRepository alimentoRepository,
             UsuarioRepository usuarioRepository,
             RotinaRefeicoesRepository rotinaRefeicoesRepository,
-            RotinaRefeicaoAlimentosRepository rotinaRefeicaoAlimentosRepository
-    ) {
+            RotinaRefeicaoAlimentosRepository rotinaRefeicaoAlimentosRepository,
+            GeradorRotinaValidation geradorRotinaValidation) {
         this.rotinaRepository = rotinaRepository;
         this.rotinaTreinoRepository = rotinaTreinoRepository;
         this.horarioSonoRepository = horarioSonoRepository;
@@ -52,15 +54,15 @@ public class RotinaService {
         this.usuarioRepository = usuarioRepository;
         this.rotinaRefeicoesRepository = rotinaRefeicoesRepository;
         this.rotinaRefeicaoAlimentosRepository = rotinaRefeicaoAlimentosRepository;
+        this.geradorRotinaValidation = geradorRotinaValidation;
     }
 
     private Rotinas buscarRotinaUsuario(String cpf) {
 
         return rotinaRepository.findByUsuarioCpf(cpf)
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                "Usuário não possui rotina cadastrada"
-            ));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Usuário não possui rotina cadastrada"));
     }
 
     private String gerarId() {
@@ -71,6 +73,13 @@ public class RotinaService {
     public String criarRotina(RotinaRequest request, String cpf) {
 
         Usuario usuario = buscarUsuario(cpf);
+
+        if (rotinaRepository.existsByUsuarioCpf(cpf)) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "O usuário já possui uma rotina cadastrada"
+            );
+        }
 
         validarPreferenciasMusculares(request);
 
@@ -101,7 +110,7 @@ public class RotinaService {
             });
 
         } else {
-            
+
             for (Grupo_treino grupo : Grupo_treino.values()) {
 
                 PreferenciaGruposMusculares preferencia = new PreferenciaGruposMusculares();
@@ -126,25 +135,22 @@ public class RotinaService {
 
         if (rotinaTreinoRepository.existsByRotinaId(rotina.getId())) {
             throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "Esta rotina já possui treinos cadastrados"
-            );
+                    HttpStatus.CONFLICT,
+                    "Esta rotina já possui treinos cadastrados");
         }
 
         if (request.horarioInicio().equals(request.horarioFim())) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Os horários de abertura e fechamento não podem ser iguais"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Os horários de abertura e fechamento não podem ser iguais");
         }
 
         Set<Dia_semana> dias = new HashSet<>(request.diaSemanas());
 
         if (dias.size() != request.diaSemanas().size()) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Existem dias da semana repetidos"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Existem dias da semana repetidos");
         }
 
         for (Dia_semana dia : dias) {
@@ -168,9 +174,8 @@ public class RotinaService {
 
         if (horarioSonoRepository.existsByRotinaId(rotina.getId())) {
             throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "Esta rotina já possui horários de sono cadastrados"
-            );
+                    HttpStatus.CONFLICT,
+                    "Esta rotina já possui horários de sono cadastrados");
         }
 
         validarHorariosSono(request);
@@ -187,17 +192,15 @@ public class RotinaService {
 
             for (HorarioSonoItemRequest horario : request.horarios()) {
                 salvarHorarioSono(
-                    rotina,
-                    horario.diaSemana(),
-                    horario
-                );
+                        rotina,
+                        horario.diaSemana(),
+                        horario);
             }
         }
     }
 
-
     @Transactional
-    public void salvarRestricoes(RestricoesAlimentaresRequest request,String cpf) {
+    public void salvarRestricoes(RestricoesAlimentaresRequest request, String cpf) {
 
         Usuario usuario = buscarUsuario(cpf);
 
@@ -205,26 +208,23 @@ public class RotinaService {
 
         if (ids.size() != request.restricoes().size()) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Existem restrições repetidas"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Existem restrições repetidas");
         }
 
         List<Restricao> restricoes = restricaoRepository.findAllById(ids);
 
         if (restricoes.size() != ids.size()) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Uma ou mais restrições não existem"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Uma ou mais restrições não existem");
         }
 
         restricaoAlimentarRepository.deleteByUsuarioCpf(cpf);
 
         for (Restricao restricao : restricoes) {
 
-            RestricoesAlimentares associacao =
-                    new RestricoesAlimentares();
+            RestricoesAlimentares associacao = new RestricoesAlimentares();
 
             associacao.setId(UUID.randomUUID().toString());
             associacao.setUsuario(usuario);
@@ -234,9 +234,8 @@ public class RotinaService {
         }
     }
 
-
     @Transactional
-    public void salvarAlimentosPreferidos(AlimentosPreferidosRequest request,String cpf) {
+    public void salvarAlimentosPreferidos(AlimentosPreferidosRequest request, String cpf) {
 
         Usuario usuario = buscarUsuario(cpf);
 
@@ -244,18 +243,16 @@ public class RotinaService {
 
         if (ids.size() < 5) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Selecione pelo menos 5 alimentos diferentes"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Selecione pelo menos 5 alimentos diferentes");
         }
 
         List<Alimento> alimentos = alimentoRepository.findAllById(ids);
 
         if (alimentos.size() != ids.size()) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Um ou mais alimentos não existem"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Um ou mais alimentos não existem");
         }
 
         preferenciaAlimentarRepository.deleteByUsuarioCpf(cpf);
@@ -276,19 +273,17 @@ public class RotinaService {
     private Usuario buscarUsuario(String cpf) {
 
         return usuarioRepository.findByCpf(cpf)
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                "Usuário não encontrado"
-            ));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Usuário não encontrado"));
     }
 
     private Rotinas buscarRotinaDoUsuario(String idRotina, String cpf) {
 
         return rotinaRepository.findByIdAndUsuarioCpf(idRotina, cpf)
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                "Rotina não encontrada para este usuário"
-            ));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Rotina não encontrada para este usuário"));
     }
 
     private void validarPreferenciasMusculares(RotinaRequest request) {
@@ -299,9 +294,8 @@ public class RotinaService {
 
             if (preferencias != null && !preferencias.isEmpty()) {
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Distribuição balanceada não permite prioridades musculares"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "Distribuição balanceada não permite prioridades musculares");
             }
 
             return;
@@ -311,31 +305,27 @@ public class RotinaService {
 
             if (preferencias == null || preferencias.size() != 3) {
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Informe os três grupos musculares"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "Informe os três grupos musculares");
             }
 
             Set<Grupo_treino> grupos = Set.of(
-                Grupo_treino.SUPERIORES,
-                Grupo_treino.ABDOMINAL,
-                Grupo_treino.INFERIORES
-            );
+                    Grupo_treino.SUPERIORES,
+                    Grupo_treino.ABDOMINAL,
+                    Grupo_treino.INFERIORES);
 
             if (!preferencias.keySet().equals(grupos)) {
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Grupos musculares inválidos"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "Grupos musculares inválidos");
             }
 
             if (!new HashSet<>(preferencias.values())
                     .equals(Set.of(1, 2, 3))) {
 
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "As prioridades devem ser 1, 2 e 3, sem repetições"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "As prioridades devem ser 1, 2 e 3, sem repetições");
             }
         }
     }
@@ -348,16 +338,14 @@ public class RotinaService {
 
             if (horarios.size() != 1) {
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Informe apenas um horário para todos os dias"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "Informe apenas um horário para todos os dias");
             }
 
             if (horarios.get(0).diaSemana() != null) {
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Não informe um dia específico para horários iguais"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "Não informe um dia específico para horários iguais");
             }
 
             return;
@@ -365,9 +353,8 @@ public class RotinaService {
 
         if (horarios.size() != Dia_semana.values().length) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Informe os horários dos sete dias da semana"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Informe os horários dos sete dias da semana");
         }
 
         Set<Dia_semana> dias = new HashSet<>();
@@ -376,21 +363,19 @@ public class RotinaService {
 
             if (horario.diaSemana() == null) {
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "O dia da semana é obrigatório"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "O dia da semana é obrigatório");
             }
 
             if (!dias.add(horario.diaSemana())) {
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Existem dias da semana repetidos"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "Existem dias da semana repetidos");
             }
         }
     }
 
-    private void salvarHorarioSono( Rotinas rotina,Dia_semana dia,HorarioSonoItemRequest horario) {
+    private void salvarHorarioSono(Rotinas rotina, Dia_semana dia, HorarioSonoItemRequest horario) {
 
         HorariosSono sono = new HorariosSono();
 
@@ -411,32 +396,24 @@ public class RotinaService {
             return List.of();
         }
 
-        List<RotinaRefeicaoAlimentos> alimentosRefeicoes =
-                rotinaRefeicaoAlimentosRepository
-                    .findAllByRefeicao_Rotina_Id(idRotina);
+        List<RotinaRefeicaoAlimentos> alimentosRefeicoes = rotinaRefeicaoAlimentosRepository
+                .findAllByRefeicao_Rotina_Id(idRotina);
 
-        Map<String, List<RotinaRefeicaoAlimentos>> alimentosPorRefeicao =
-                alimentosRefeicoes.stream()
-                    .collect(Collectors.groupingBy(
-                        item -> item.getRefeicao().getId()
-                    ));
+        Map<String, List<RotinaRefeicaoAlimentos>> alimentosPorRefeicao = alimentosRefeicoes.stream()
+                .collect(Collectors.groupingBy(
+                        item -> item.getRefeicao().getId()));
 
         return refeicoes.stream()
-            .sorted(
-                Comparator
-                    .comparingInt((RotinaRefeicoes r) ->
-                        r.getDiaSemana().ordinal()
-                    )
-                    .thenComparing(RotinaRefeicoes::getHorario)
-            )
-            .map(refeicao -> {
+                .sorted(
+                        Comparator
+                                .comparingInt((RotinaRefeicoes r) -> r.getDiaSemana().ordinal())
+                                .thenComparing(RotinaRefeicoes::getHorario))
+                .map(refeicao -> {
 
-                List<RotinaResposeUsuario.RefeicaoAlimentoResponse> alimentos =
-                        alimentosPorRefeicao
+                    List<RotinaResposeUsuario.RefeicaoAlimentoResponse> alimentos = alimentosPorRefeicao
                             .getOrDefault(refeicao.getId(), List.of())
                             .stream()
-                            .map(item ->
-                                new RotinaResposeUsuario.RefeicaoAlimentoResponse(
+                            .map(item -> new RotinaResposeUsuario.RefeicaoAlimentoResponse(
 
                                     item.getAlimento().getId(),
 
@@ -444,55 +421,47 @@ public class RotinaService {
 
                                     item.getQuantidade()
 
-                                )
-                            )
-                            .sorted(Comparator.comparing(
-                                RotinaResposeUsuario.RefeicaoAlimentoResponse::nome
                             ))
+                            .sorted(Comparator.comparing(
+                                    RotinaResposeUsuario.RefeicaoAlimentoResponse::nome))
                             .toList();
 
-                return new RotinaResposeUsuario.RefeicaoResponse(
+                    return new RotinaResposeUsuario.RefeicaoResponse(
 
-                    refeicao.getId(),
+                            refeicao.getId(),
 
-                    refeicao.getDiaSemana(),
+                            refeicao.getDiaSemana(),
 
-                    refeicao.getNome(),
+                            refeicao.getNome(),
 
-                    refeicao.getHorario(),
+                            refeicao.getHorario(),
 
-                    alimentos
-                );
-            })
-            .toList();
+                            alimentos);
+                })
+                .toList();
     }
 
-    private RotinaResposeUsuario montarRotinaResponse(Rotinas rotina,String cpf) {
+    private RotinaResposeUsuario montarRotinaResponse(Rotinas rotina, String cpf) {
 
         String idRotina = rotina.getId();
 
-
-        List<PreferenciaGruposMusculares> preferencias =
-                preferenciaGrupoRepository.findAllByRotinaId(idRotina);
+        List<PreferenciaGruposMusculares> preferencias = preferenciaGrupoRepository.findAllByRotinaId(idRotina);
 
         Map<String, Integer> grupos = new LinkedHashMap<>();
 
         for (PreferenciaGruposMusculares preferencia : preferencias) {
 
             grupos.put(
-                preferencia.getGrupo().toString(),
-                preferencia.getPrioridade()
-            );
+                    preferencia.getGrupo().toString(),
+                    preferencia.getPrioridade());
         }
 
         List<RotinaTreinos> treinos = rotinaTreinoRepository.findAllByRotinaId(idRotina);
 
-        List<RotinaResposeUsuario.TreinoResponse> treinosResponse =
-                treinos.stream()
-                    .sorted(Comparator.comparingInt(
-                        t -> t.getDiaSemana().ordinal()
-                    ))
-                    .map(treino -> new RotinaResposeUsuario.TreinoResponse(
+        List<RotinaResposeUsuario.TreinoResponse> treinosResponse = treinos.stream()
+                .sorted(Comparator.comparingInt(
+                        t -> t.getDiaSemana().ordinal()))
+                .map(treino -> new RotinaResposeUsuario.TreinoResponse(
 
                         treino.getDiaSemana(),
 
@@ -501,20 +470,18 @@ public class RotinaService {
                         treino.getHorarioFim(),
 
                         treino.getGrupo() == null
-                            ? null
-                            : treino.getGrupo().toString()
+                                ? null
+                                : treino.getGrupo().toString()
 
-                    ))
-                    .toList();
+                ))
+                .toList();
 
         List<HorariosSono> horarios = horarioSonoRepository.findAllByRotinaId(idRotina);
 
-        List<RotinaResposeUsuario.SonoResponse> sonoResponse =
-                horarios.stream()
-                    .sorted(Comparator.comparingInt(
-                        h -> h.getDiaSemana().ordinal()
-                    ))
-                    .map(horario -> new RotinaResposeUsuario.SonoResponse(
+        List<RotinaResposeUsuario.SonoResponse> sonoResponse = horarios.stream()
+                .sorted(Comparator.comparingInt(
+                        h -> h.getDiaSemana().ordinal()))
+                .map(horario -> new RotinaResposeUsuario.SonoResponse(
 
                         horario.getDiaSemana(),
 
@@ -522,79 +489,75 @@ public class RotinaService {
 
                         horario.getHorarioAcordar()
 
-                    ))
-                    .toList();
+                ))
+                .toList();
 
         List<RestricoesAlimentares> restricoes = restricaoAlimentarRepository.findAllByUsuarioCpf(cpf);
 
-        List<ItemSelecionadoResponse> restricoesResponse =
-                restricoes.stream()
-                    .map(restricao -> new ItemSelecionadoResponse(
+        List<ItemSelecionadoResponse> restricoesResponse = restricoes.stream()
+                .map(restricao -> new ItemSelecionadoResponse(
 
                         restricao.getRestricao().getId(),
 
                         restricao.getRestricao().getNome()
 
-                    ))
-                    .sorted(Comparator.comparing(ItemSelecionadoResponse::nome))
-                    .toList();
-
+                ))
+                .sorted(Comparator.comparing(ItemSelecionadoResponse::nome))
+                .toList();
 
         List<PreferenciasAlimentares> alimentos = preferenciaAlimentarRepository.findAllByUsuarioCpf(cpf);
 
-        List<ItemSelecionadoResponse> alimentosResponse =
-                alimentos.stream()
-                    .map(preferencia -> new ItemSelecionadoResponse(
+        List<ItemSelecionadoResponse> alimentosResponse = alimentos.stream()
+                .map(preferencia -> new ItemSelecionadoResponse(
 
                         preferencia.getAlimento().getId(),
 
                         preferencia.getAlimento().getNome()
 
-                    ))
-                    .sorted(Comparator.comparing(ItemSelecionadoResponse::nome))
-                    .toList();
+                ))
+                .sorted(Comparator.comparing(ItemSelecionadoResponse::nome))
+                .toList();
 
         List<RotinaResposeUsuario.RefeicaoResponse> refeicoesResponse = montarRefeicoesResponse(rotina.getId());
 
         return new RotinaResposeUsuario(
 
-            rotina.getId(),
+                rotina.getId(),
 
-            rotina.getObjetivo(),
+                rotina.getObjetivo(),
 
-            rotina.getPeso(),
+                rotina.getPeso(),
 
-            rotina.getAltura(),
+                rotina.getAltura(),
 
-            rotina.getDivisao(),
+                rotina.getDivisao(),
 
-            rotina.getDistribuicao(),
+                rotina.getDistribuicao(),
 
-            grupos,
+                grupos,
 
-            treinosResponse,
+                treinosResponse,
 
-            sonoResponse,
+                sonoResponse,
 
-            restricoesResponse,
+                restricoesResponse,
 
-            alimentosResponse,
+                alimentosResponse,
 
-            refeicoesResponse
+                refeicoesResponse
 
         );
     }
 
-   @Transactional
+    @Transactional
     public RotinaUsuarioResultado verificarRotinaUsuario(String cpf) {
 
         Optional<Rotinas> rotinaOptional = rotinaRepository.findByUsuarioCpf(cpf);
 
         if (rotinaOptional.isEmpty()) {
             return new RotinaUsuarioResultado(
-                "usuario sem rotina",
-                null
-            );
+                    "usuario sem rotina",
+                    null);
         }
 
         Rotinas rotina = rotinaOptional.get();
@@ -605,29 +568,31 @@ public class RotinaService {
         boolean formulario5 = verificarFormulario5(cpf);
 
         if (!formulario1 ||
-            !formulario2 ||
-            !formulario3 ||
-            !formulario5) {
+                !formulario2 ||
+                !formulario3 ||
+                !formulario5) {
 
             excluirRotinaIncompleta(rotina, cpf);
 
             return new RotinaUsuarioResultado(
-                "rotina corrompida",
-                null
-            );
+                    "rotina corrompida",
+                    null);
         }
 
-        RotinaResposeUsuario response =
-                montarRotinaResponse(rotina, cpf);
+        RotinaResposeUsuario response = montarRotinaResponse(rotina, cpf);
 
         return new RotinaUsuarioResultado(
-            null,
-            response
-        );
+                null,
+                response);
     }
 
     private boolean verificarFormulario1(Rotinas rotina) {
-        if (rotina.getObjetivo() == null || rotina.getPeso() == null ||rotina.getAltura() == null || rotina.getDivisao() == null ||rotina.getDistribuicao() == null) {
+
+        if (rotina.getObjetivo() == null ||
+            rotina.getPeso() == null ||
+            rotina.getAltura() == null ||
+            rotina.getDivisao() == null ||
+            rotina.getDistribuicao() == null) {
 
             return false;
         }
@@ -641,37 +606,40 @@ public class RotinaService {
         List<PreferenciaGruposMusculares> preferencias =
                 preferenciaGrupoRepository.findAllByRotinaId(rotina.getId());
 
+        if (preferencias.size() != Grupo_treino.values().length) {
+            return false;
+        }
+
+        Set<Grupo_treino> grupos = new HashSet<>();
+        Set<Integer> prioridades = new HashSet<>();
+
+        for (PreferenciaGruposMusculares preferencia : preferencias) {
+
+            if (preferencia.getGrupo() == null ||
+                preferencia.getPrioridade() == null) {
+
+                return false;
+            }
+
+            if (!grupos.add(preferencia.getGrupo())) {
+                return false;
+            }
+
+            prioridades.add(preferencia.getPrioridade());
+        }
+
+        if (!grupos.equals(EnumSet.allOf(Grupo_treino.class))) {
+            return false;
+        }
+
         if (rotina.getDistribuicao() == Distribuicao_rotina.BALANCEADO) {
-            return preferencias.isEmpty();
+
+            return prioridades.equals(Set.of(1));
         }
 
         if (rotina.getDistribuicao() == Distribuicao_rotina.PRIORIDADE) {
 
-            if (preferencias.size() != 3) {
-                return false;
-            }
-
-            Set<String> grupos = new HashSet<>();
-            Set<Integer> prioridades = new HashSet<>();
-
-            for (PreferenciaGruposMusculares preferencia : preferencias) {
-
-                if (preferencia.getGrupo() == null ||
-                    preferencia.getPrioridade() == null) {
-                    return false;
-                }
-
-                grupos.add(preferencia.getGrupo().toString());
-                prioridades.add(preferencia.getPrioridade());
-            }
-
-            return grupos.equals(Set.of(
-                        "SUPERIORES",
-                        "ABDOMINAL",
-                        "INFERIORES"
-                    ))
-                    &&
-                    prioridades.equals(Set.of(1, 2, 3));
+            return prioridades.equals(Set.of(1, 2, 3));
         }
 
         return false;
@@ -679,8 +647,7 @@ public class RotinaService {
 
     private boolean verificarFormulario2(Rotinas rotina) {
 
-        List<RotinaTreinos> treinos =
-                rotinaTreinoRepository.findAllByRotinaId(rotina.getId());
+        List<RotinaTreinos> treinos = rotinaTreinoRepository.findAllByRotinaId(rotina.getId());
 
         if (treinos.isEmpty()) {
             return false;
@@ -691,8 +658,8 @@ public class RotinaService {
         for (RotinaTreinos treino : treinos) {
 
             if (treino.getDiaSemana() == null ||
-                treino.getHorarioInicio() == null ||
-                treino.getHorarioFim() == null) {
+                    treino.getHorarioInicio() == null ||
+                    treino.getHorarioFim() == null) {
 
                 return false;
             }
@@ -722,8 +689,8 @@ public class RotinaService {
         for (HorariosSono horario : horarios) {
 
             if (horario.getDiaSemana() == null ||
-                horario.getHorarioDormir() == null ||
-                horario.getHorarioAcordar() == null) {
+                    horario.getHorarioDormir() == null ||
+                    horario.getHorarioAcordar() == null) {
 
                 return false;
             }
@@ -738,8 +705,7 @@ public class RotinaService {
 
     private boolean verificarFormulario5(String cpf) {
 
-        List<PreferenciasAlimentares> preferencias =
-                preferenciaAlimentarRepository.findAllByUsuarioCpf(cpf);
+        List<PreferenciasAlimentares> preferencias = preferenciaAlimentarRepository.findAllByUsuarioCpf(cpf);
 
         if (preferencias.size() < 5) {
             return false;
@@ -750,7 +716,7 @@ public class RotinaService {
         for (PreferenciasAlimentares preferencia : preferencias) {
 
             if (preferencia.getAlimento() == null ||
-                preferencia.getAlimento().getId() == null) {
+                    preferencia.getAlimento().getId() == null) {
 
                 return false;
             }
@@ -762,6 +728,7 @@ public class RotinaService {
     }
 
     private void excluirRotinaIncompleta(Rotinas rotina, String cpf) {
+        excluirRotinaRefeicoes(cpf);
 
         preferenciaAlimentarRepository.deleteByUsuarioCpf(cpf);
 
@@ -774,7 +741,8 @@ public class RotinaService {
     @Transactional
     public void excluirRotinaRefeicoes(String cpf) {
         String idRotina = rotinaRepository.findIdByUsuarioCpf(cpf)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Rotina não encontrada para o usuário"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Rotina não encontrada para o usuário"));
 
         List<String> idsRefeicoes = rotinaRefeicoesRepository.findIdsByRotinaId(idRotina);
 
@@ -784,44 +752,39 @@ public class RotinaService {
         }
     }
 
-
     @Transactional(readOnly = true)
     public RotinaUpdateForms1Response buscarForms1(String cpf) {
 
         Rotinas rotina = buscarRotinaUsuario(cpf);
 
-        List<PreferenciaGruposMusculares> preferencias =
-                preferenciaGrupoRepository.findAllByRotinaId(rotina.getId());
+        List<PreferenciaGruposMusculares> preferencias = preferenciaGrupoRepository.findAllByRotinaId(rotina.getId());
 
         Map<String, Integer> grupos = new LinkedHashMap<>();
 
         for (PreferenciaGruposMusculares preferencia : preferencias) {
 
             grupos.put(
-                preferencia.getGrupo().toString(),
-                preferencia.getPrioridade()
-            );
+                    preferencia.getGrupo().toString(),
+                    preferencia.getPrioridade());
         }
 
         return new RotinaUpdateForms1Response(
-            rotina.getObjetivo(),
-            rotina.getPeso(),
-            rotina.getAltura(),
-            rotina.getDivisao(),
-            rotina.getDistribuicao(),
-            grupos
-        );
+                rotina.getObjetivo(),
+                rotina.getPeso(),
+                rotina.getAltura(),
+                rotina.getDivisao(),
+                rotina.getDistribuicao(),
+                grupos);
     }
 
     @Transactional
-    public void atualizarForms1(RotinaUpdateForms1Request request,String cpf) {
+    public void atualizarForms1(RotinaUpdateForms1Request request, String cpf) {
 
         Rotinas rotina = buscarRotinaUsuario(cpf);
 
         validarPreferenciasMusculares(
-            request.distribuicao(),
-            request.preferenciasMusculares()
-        );
+                request.distribuicao(),
+                request.preferenciasMusculares());
 
         excluirRotinaRefeicoes(cpf);
 
@@ -831,8 +794,7 @@ public class RotinaService {
         rotina.setDivisao(request.divisao());
         rotina.setDistribuicao(request.distribuicao());
 
-        List<PreferenciaGruposMusculares> antigas =
-                preferenciaGrupoRepository.findAllByRotinaId(rotina.getId());
+        List<PreferenciaGruposMusculares> antigas = preferenciaGrupoRepository.findAllByRotinaId(rotina.getId());
 
         preferenciaGrupoRepository.deleteAll(antigas);
         preferenciaGrupoRepository.flush();
@@ -841,8 +803,7 @@ public class RotinaService {
 
             request.preferenciasMusculares().forEach((grupo, prioridade) -> {
 
-                PreferenciaGruposMusculares preferencia =
-                        new PreferenciaGruposMusculares();
+                PreferenciaGruposMusculares preferencia = new PreferenciaGruposMusculares();
 
                 preferencia.setId(gerarId());
                 preferencia.setRotina(rotina);
@@ -856,8 +817,7 @@ public class RotinaService {
 
             for (Grupo_treino grupo : Grupo_treino.values()) {
 
-                PreferenciaGruposMusculares preferencia =
-                        new PreferenciaGruposMusculares();
+                PreferenciaGruposMusculares preferencia = new PreferenciaGruposMusculares();
 
                 preferencia.setId(gerarId());
                 preferencia.setRotina(rotina);
@@ -872,17 +832,15 @@ public class RotinaService {
     }
 
     private void validarPreferenciasMusculares(
-        Distribuicao_rotina distribuicao,
-        Map<Grupo_treino, Integer> preferencias
-    ) {
+            Distribuicao_rotina distribuicao,
+            Map<Grupo_treino, Integer> preferencias) {
 
         if (distribuicao == Distribuicao_rotina.BALANCEADO) {
 
             if (preferencias != null && !preferencias.isEmpty()) {
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "A distribuição balanceada não permite prioridades musculares"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "A distribuição balanceada não permite prioridades musculares");
             }
 
             return;
@@ -892,32 +850,28 @@ public class RotinaService {
 
             if (preferencias == null || preferencias.size() != Grupo_treino.values().length) {
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Informe os três grupos musculares"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "Informe os três grupos musculares");
             }
 
             if (!preferencias.keySet().equals(Set.of(Grupo_treino.values()))) {
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Grupos musculares inválidos"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "Grupos musculares inválidos");
             }
 
             if (!new HashSet<>(preferencias.values()).equals(Set.of(1, 2, 3))) {
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Prioridades inválidas"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "Prioridades inválidas");
             }
 
             return;
         }
 
         throw new ResponseStatusException(
-            HttpStatus.BAD_REQUEST,
-            "Distribuição inválida"
-        );
+                HttpStatus.BAD_REQUEST,
+                "Distribuição inválida");
     }
 
     @Transactional(readOnly = true)
@@ -925,14 +879,12 @@ public class RotinaService {
 
         Rotinas rotina = buscarRotinaUsuario(cpf);
 
-        List<RotinaTreinos> treinos =
-                rotinaTreinoRepository.findAllByRotinaId(rotina.getId());
+        List<RotinaTreinos> treinos = rotinaTreinoRepository.findAllByRotinaId(rotina.getId());
 
         if (treinos.isEmpty()) {
             throw new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                "Nenhum treino cadastrado"
-            );
+                    HttpStatus.NOT_FOUND,
+                    "Nenhum treino cadastrado");
         }
 
         LocalTime inicio = treinos.get(0).getHorarioInicio();
@@ -940,9 +892,8 @@ public class RotinaService {
 
         if (inicio == null || fim == null) {
             throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "Horários da academia inválidos"
-            );
+                    HttpStatus.CONFLICT,
+                    "Horários da academia inválidos");
         }
 
         Set<Dia_semana> dias = new HashSet<>();
@@ -950,14 +901,13 @@ public class RotinaService {
         for (RotinaTreinos treino : treinos) {
 
             if (treino.getDiaSemana() == null ||
-                !inicio.equals(treino.getHorarioInicio()) ||
-                !fim.equals(treino.getHorarioFim()) ||
-                !dias.add(treino.getDiaSemana())) {
+                    !inicio.equals(treino.getHorarioInicio()) ||
+                    !fim.equals(treino.getHorarioFim()) ||
+                    !dias.add(treino.getDiaSemana())) {
 
                 throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Dados de treino inconsistentes"
-                );
+                        HttpStatus.CONFLICT,
+                        "Dados de treino inconsistentes");
             }
         }
 
@@ -966,22 +916,20 @@ public class RotinaService {
         diasOrdenados.sort(Comparator.comparingInt(Enum::ordinal));
 
         return new RotinaUpdateForms2Response(
-            diasOrdenados,
-            inicio,
-            fim
-        );
+                diasOrdenados,
+                inicio,
+                fim);
     }
 
     @Transactional
-    public void atualizarForms2(RotinaUpdateForms2Request request,String cpf) {
+    public void atualizarForms2(RotinaUpdateForms2Request request, String cpf) {
 
         Rotinas rotina = buscarRotinaUsuario(cpf);
 
         if (request.horarioInicio().equals(request.horarioFim())) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Os horários da academia não podem ser iguais"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Os horários da academia não podem ser iguais");
         }
 
         excluirRotinaRefeicoes(cpf);
@@ -990,9 +938,8 @@ public class RotinaService {
 
         if (dias.size() != request.diaSemanas().size()) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Dias da semana repetidos"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Dias da semana repetidos");
         }
 
         List<RotinaTreinos> antigos = rotinaTreinoRepository.findAllByRotinaId(rotina.getId());
@@ -1019,14 +966,12 @@ public class RotinaService {
 
         Rotinas rotina = buscarRotinaUsuario(cpf);
 
-        List<HorariosSono> horarios =
-                horarioSonoRepository.findAllByRotinaId(rotina.getId());
+        List<HorariosSono> horarios = horarioSonoRepository.findAllByRotinaId(rotina.getId());
 
         if (horarios.size() != Dia_semana.values().length) {
             throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "Horários de sono incompletos"
-            );
+                    HttpStatus.CONFLICT,
+                    "Horários de sono incompletos");
         }
 
         Set<Dia_semana> dias = new HashSet<>();
@@ -1034,70 +979,62 @@ public class RotinaService {
         for (HorariosSono horario : horarios) {
 
             if (horario.getDiaSemana() == null ||
-                horario.getHorarioDormir() == null ||
-                horario.getHorarioAcordar() == null ||
-                !dias.add(horario.getDiaSemana())) {
+                    horario.getHorarioDormir() == null ||
+                    horario.getHorarioAcordar() == null ||
+                    !dias.add(horario.getDiaSemana())) {
 
                 throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Horários de sono inconsistentes"
-                );
+                        HttpStatus.CONFLICT,
+                        "Horários de sono inconsistentes");
             }
         }
 
         horarios.sort(
-            Comparator.comparingInt(h -> h.getDiaSemana().ordinal())
-        );
+                Comparator.comparingInt(h -> h.getDiaSemana().ordinal()));
 
         HorariosSono primeiro = horarios.get(0);
 
-        boolean horariosIguais = horarios.stream().allMatch(h ->
-            h.getHorarioDormir().equals(primeiro.getHorarioDormir()) &&
-            h.getHorarioAcordar().equals(primeiro.getHorarioAcordar())
-        );
+        boolean horariosIguais = horarios.stream()
+                .allMatch(h -> h.getHorarioDormir().equals(primeiro.getHorarioDormir()) &&
+                        h.getHorarioAcordar().equals(primeiro.getHorarioAcordar()));
 
         List<HorarioSonoItemRequest> itens = new ArrayList<>();
 
         if (horariosIguais) {
 
             itens.add(new HorarioSonoItemRequest(
-                null,
-                primeiro.getHorarioDormir(),
-                primeiro.getHorarioAcordar()
-            ));
+                    null,
+                    primeiro.getHorarioDormir(),
+                    primeiro.getHorarioAcordar()));
 
         } else {
 
             for (HorariosSono horario : horarios) {
 
                 itens.add(new HorarioSonoItemRequest(
-                    horario.getDiaSemana(),
-                    horario.getHorarioDormir(),
-                    horario.getHorarioAcordar()
-                ));
+                        horario.getDiaSemana(),
+                        horario.getHorarioDormir(),
+                        horario.getHorarioAcordar()));
             }
         }
 
         return new RotinaUpdateForms3Response(
-            horariosIguais,
-            itens
-        );
+                horariosIguais,
+                itens);
     }
 
     @Transactional
-    public void atualizarForms3(RotinaUpdateForms3Request request,String cpf) {
+    public void atualizarForms3(RotinaUpdateForms3Request request, String cpf) {
 
         Rotinas rotina = buscarRotinaUsuario(cpf);
 
         validarHorariosSono(
-            request.horariosIguais(),
-            request.horarios()
-        );
+                request.horariosIguais(),
+                request.horarios());
 
         excluirRotinaRefeicoes(cpf);
 
-        List<HorariosSono> antigos =
-                horarioSonoRepository.findAllByRotinaId(rotina.getId());
+        List<HorariosSono> antigos = horarioSonoRepository.findAllByRotinaId(rotina.getId());
 
         horarioSonoRepository.deleteAll(antigos);
         horarioSonoRepository.flush();
@@ -1114,50 +1051,45 @@ public class RotinaService {
 
             for (HorarioSonoItemRequest horario : request.horarios()) {
                 salvarHorarioSono(
-                    rotina,
-                    horario.diaSemana(),
-                    horario
-                );
+                        rotina,
+                        horario.diaSemana(),
+                        horario);
             }
         }
     }
 
     private void validarHorariosSono(
             Boolean horariosIguais,
-            List<HorarioSonoItemRequest> horarios
-    ) {
+            List<HorarioSonoItemRequest> horarios) {
 
         if (horarios == null || horarios.isEmpty() ||
-            horariosIguais == null) {
+                horariosIguais == null) {
 
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Informe os horários de sono"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Informe os horários de sono");
         }
 
         for (HorarioSonoItemRequest horario : horarios) {
 
             if (horario == null ||
-                horario.horarioDormir() == null ||
-                horario.horarioAcordar() == null) {
+                    horario.horarioDormir() == null ||
+                    horario.horarioAcordar() == null) {
 
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Os horários de dormir e acordar são obrigatórios"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "Os horários de dormir e acordar são obrigatórios");
             }
         }
 
         if (horariosIguais) {
 
             if (horarios.size() != 1 ||
-                horarios.get(0).diaSemana() != null) {
+                    horarios.get(0).diaSemana() != null) {
 
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Informe apenas um conjunto de horários, sem dia da semana"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "Informe apenas um conjunto de horários, sem dia da semana");
             }
 
             return;
@@ -1165,9 +1097,8 @@ public class RotinaService {
 
         if (horarios.size() != Dia_semana.values().length) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Informe os horários dos sete dias"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Informe os horários dos sete dias");
         }
 
         Set<Dia_semana> dias = new HashSet<>();
@@ -1175,12 +1106,11 @@ public class RotinaService {
         for (HorarioSonoItemRequest horario : horarios) {
 
             if (horario.diaSemana() == null ||
-                !dias.add(horario.diaSemana())) {
+                    !dias.add(horario.diaSemana())) {
 
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Dias da semana inválidos ou repetidos"
-                );
+                        HttpStatus.BAD_REQUEST,
+                        "Dias da semana inválidos ou repetidos");
             }
         }
     }
@@ -1190,22 +1120,20 @@ public class RotinaService {
 
         buscarRotinaUsuario(cpf);
 
-        List<RestricoesAlimentares> associacoes =
-                restricaoAlimentarRepository.findAllByUsuarioCpf(cpf);
+        List<RestricoesAlimentares> associacoes = restricaoAlimentarRepository.findAllByUsuarioCpf(cpf);
 
         List<ItemSelecionadoResponse> restricoes = associacoes.stream()
-            .map(associacao -> new ItemSelecionadoResponse(
-                associacao.getRestricao().getId(),
-                associacao.getRestricao().getNome()
-            ))
-            .sorted(Comparator.comparing(ItemSelecionadoResponse::nome))
-            .toList();
+                .map(associacao -> new ItemSelecionadoResponse(
+                        associacao.getRestricao().getId(),
+                        associacao.getRestricao().getNome()))
+                .sorted(Comparator.comparing(ItemSelecionadoResponse::nome))
+                .toList();
 
         return new RotinaUpdateForms4Response(restricoes);
     }
 
     @Transactional
-    public void atualizarForms4(RotinaUpdateForms4Request request,String cpf) {
+    public void atualizarForms4(RotinaUpdateForms4Request request, String cpf) {
 
         Rotinas rotina = buscarRotinaUsuario(cpf);
 
@@ -1215,33 +1143,28 @@ public class RotinaService {
 
         if (ids.size() != request.restricoes().size()) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Existem restrições repetidas"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Existem restrições repetidas");
         }
 
-        List<Restricao> restricoes =
-                restricaoRepository.findAllById(ids);
+        List<Restricao> restricoes = restricaoRepository.findAllById(ids);
 
         if (restricoes.size() != ids.size()) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Uma ou mais restrições não existem"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Uma ou mais restrições não existem");
         }
 
         excluirRotinaRefeicoes(cpf);
 
-        List<RestricoesAlimentares> antigas =
-                restricaoAlimentarRepository.findAllByUsuarioCpf(cpf);
+        List<RestricoesAlimentares> antigas = restricaoAlimentarRepository.findAllByUsuarioCpf(cpf);
 
         restricaoAlimentarRepository.deleteAll(antigas);
         restricaoAlimentarRepository.flush();
 
         for (Restricao restricao : restricoes) {
 
-            RestricoesAlimentares associacao =
-                    new RestricoesAlimentares();
+            RestricoesAlimentares associacao = new RestricoesAlimentares();
 
             associacao.setId(gerarId());
             associacao.setUsuario(usuario);
@@ -1256,16 +1179,14 @@ public class RotinaService {
 
         buscarRotinaUsuario(cpf);
 
-        List<PreferenciasAlimentares> associacoes =
-                preferenciaAlimentarRepository.findAllByUsuarioCpf(cpf);
+        List<PreferenciasAlimentares> associacoes = preferenciaAlimentarRepository.findAllByUsuarioCpf(cpf);
 
         List<ItemSelecionadoResponse> alimentos = associacoes.stream()
-            .map(associacao -> new ItemSelecionadoResponse(
-                associacao.getAlimento().getId(),
-                associacao.getAlimento().getNome()
-            ))
-            .sorted(Comparator.comparing(ItemSelecionadoResponse::nome))
-            .toList();
+                .map(associacao -> new ItemSelecionadoResponse(
+                        associacao.getAlimento().getId(),
+                        associacao.getAlimento().getNome()))
+                .sorted(Comparator.comparing(ItemSelecionadoResponse::nome))
+                .toList();
 
         return new RotinaUpdateForms5Response(alimentos);
     }
@@ -1281,19 +1202,16 @@ public class RotinaService {
 
         if (ids.size() < 5) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Selecione pelo menos 5 alimentos diferentes"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Selecione pelo menos 5 alimentos diferentes");
         }
 
-        List<Alimento> alimentos =
-                alimentoRepository.findAllById(ids);
+        List<Alimento> alimentos = alimentoRepository.findAllById(ids);
 
         if (alimentos.size() != ids.size()) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Um ou mais alimentos não existem"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Um ou mais alimentos não existem");
         }
 
         excluirRotinaRefeicoes(cpf);
@@ -1321,21 +1239,18 @@ public class RotinaService {
 
         if (!confirmar) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "É necessário confirmar a exclusão da rotina"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "É necessário confirmar a exclusão da rotina");
         }
 
         Rotinas rotina = rotinaRepository.findByUsuarioCpf(cpf)
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                "Rotina não encontrada para o usuário"
-            ));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Rotina não encontrada para o usuário"));
 
         String idRotina = rotina.getId();
 
-        List<String> idsRefeicoes =
-                rotinaRefeicoesRepository.findIdsByRotinaId(idRotina);
+        List<String> idsRefeicoes = rotinaRefeicoesRepository.findIdsByRotinaId(idRotina);
 
         if (!idsRefeicoes.isEmpty()) {
 
@@ -1352,6 +1267,159 @@ public class RotinaService {
         rotinaRepository.delete(rotina);
         rotinaRepository.flush();
     }
+
+    @Transactional(readOnly = true)
+    public RotinaResposeUsuario gerarRotinaDemonstracao(String cpf) {
+
+        Rotinas rotina = buscarRotinaUsuario(cpf);
+
+        Usuario usuario = usuarioRepository.findByCpf(cpf)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Usuário não encontrado"));
+
+        RotinaResposeUsuario dados = montarRotinaResponse(rotina, cpf);
+
+        return geradorRotinaValidation.gerar(
+                dados,
+                usuario.getDataNascimento());
+    }
+
+    @Transactional
+    public void salvarRotinaGerada(String cpf,RotinaResposeUsuario response) {
+
+        Rotinas rotina = buscarRotinaUsuario(cpf);
+
+        if (response == null ||!rotina.getId().equals(response.idRotina())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Dados da rotina inválidos");
+        }
+
+        if (response.treinos() == null ||
+                response.refeicoes() == null ||
+                response.refeicoes().isEmpty()) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "A rotina gerada está incompleta");
+        }
+
+        String idRotina = rotina.getId();
+
+        Map<Dia_semana, Grupo_treino> grupos = new HashMap<>();
+
+        for (var treino : response.treinos()) {
+
+            Grupo_treino grupo;
+
+            try {
+                grupo = Grupo_treino.valueOf(treino.grupoMuscular());
+            } catch (IllegalArgumentException | NullPointerException e) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Grupo muscular inválido");
+            }
+
+            if (grupos.putIfAbsent(treino.diaSemana(), grupo) != null) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Dias de treino repetidos");
+            }
+        }
+
+        List<RotinaTreinos> treinosBanco = rotinaTreinoRepository.findAllByRotinaId(idRotina);
+
+        if (treinosBanco.size() != grupos.size()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Os dias de treino não correspondem aos cadastrados");
+        }
+
+        for (RotinaTreinos treino : treinosBanco) {
+
+            Grupo_treino grupo = grupos.get(treino.getDiaSemana());
+
+            if (grupo == null) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Dia de treino inválido");
+            }
+
+            treino.setGrupo(grupo);
+        }
+
+        List<PreferenciasAlimentares> preferencias = preferenciaAlimentarRepository.findAllByUsuarioCpf(cpf);
+
+        Map<String, Alimento> alimentosPermitidos = new HashMap<>();
+
+        for (PreferenciasAlimentares preferencia : preferencias) {
+
+            Alimento alimento = preferencia.getAlimento();
+
+            alimentosPermitidos.put(alimento.getId(), alimento);
+        }
+
+        for (var refeicao : response.refeicoes()) {
+
+            if (refeicao == null ||
+                    refeicao.diaSemana() == null ||
+                    refeicao.nome() == null ||
+                    refeicao.nome().isBlank() ||
+                    refeicao.horario() == null ||
+                    refeicao.alimentos() == null ||
+                    refeicao.alimentos().isEmpty()) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Refeição inválida");
+            }
+
+            for (var item : refeicao.alimentos()) {
+
+                if (item == null ||
+                        !alimentosPermitidos.containsKey(item.idAlimento()) ||
+                        item.quantidade() == null ||
+                        item.quantidade().signum() <= 0) {
+
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "Alimento ou quantidade inválida");
+                }
+            }
+        }
+
+        rotinaTreinoRepository.saveAll(treinosBanco);
+
+        excluirRotinaRefeicoes(cpf);
+
+        for (var refeicaoGerada : response.refeicoes()) {
+
+            RotinaRefeicoes refeicao = new RotinaRefeicoes();
+
+            refeicao.setId(UUID.randomUUID().toString());
+            refeicao.setRotina(rotina);
+            refeicao.setDiaSemana(refeicaoGerada.diaSemana());
+            refeicao.setNome(refeicaoGerada.nome());
+            refeicao.setHorario(refeicaoGerada.horario());
+
+            rotinaRefeicoesRepository.save(refeicao);
+
+            for (var alimentoGerado : refeicaoGerada.alimentos()) {
+
+                RotinaRefeicaoAlimentos associacao = new RotinaRefeicaoAlimentos();
+
+                associacao.setId(UUID.randomUUID().toString());
+                associacao.setRefeicao(refeicao);
+
+                associacao.setAlimento(
+                        alimentosPermitidos.get(alimentoGerado.idAlimento()));
+
+                associacao.setQuantidade(alimentoGerado.quantidade());
+
+                rotinaRefeicaoAlimentosRepository.save(associacao);
+            }
+        }
+    }
 }
-
-

@@ -4,8 +4,6 @@ import com.nutrihub.backend.dto.AlimentoResponse;
 import com.nutrihub.backend.dto.AlimentosRequest;
 import com.nutrihub.backend.dto.AlimentosUpdateRequest;
 import com.nutrihub.backend.dto.BanirRequest;
-import com.nutrihub.backend.dto.LoginRequest;
-import com.nutrihub.backend.dto.LoginResponse;
 import com.nutrihub.backend.dto.RestricaoRequest;
 import com.nutrihub.backend.dto.RestricaoResponse;
 import com.nutrihub.backend.dto.RestricaoUpdateRequest;
@@ -15,24 +13,18 @@ import com.nutrihub.backend.enums.Tipo_restricoes;
 import com.nutrihub.backend.enums.Tipo_usuarios;
 import com.nutrihub.backend.repository.UsuarioRepository;
 
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.nutrihub.backend.dto.UsuarioResponse;
-import com.nutrihub.backend.service.AuthService;
 import com.nutrihub.backend.service.UsuarioService;
 
 

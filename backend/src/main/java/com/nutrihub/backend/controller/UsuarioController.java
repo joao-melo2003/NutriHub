@@ -1,6 +1,7 @@
 package com.nutrihub.backend.controller;
 
 import com.nutrihub.backend.dto.ExcluirContaRequest;
+import com.nutrihub.backend.dto.RotinaResposeUsuario;
 import com.nutrihub.backend.dto.RotinaUsuarioResultado;
 import com.nutrihub.backend.dto.SenhaRequest;
 import com.nutrihub.backend.dto.UsuarioRequest;
@@ -30,6 +31,7 @@ public class UsuarioController {
 
     private final UsuarioService usuarioService;
     private final RotinaService rotinaService;
+    
 
     public UsuarioController(UsuarioService usuarioService, RotinaService rotinaFormsService) {
         this.usuarioService = usuarioService;
@@ -142,6 +144,16 @@ public class UsuarioController {
         }
 
         return ResponseEntity.ok(resultado.rotina());
+    }
+
+   @PostMapping("/finalizaRotina")
+    public ResponseEntity<Void> finalizaRotina(Authentication authentication) {
+        String cpf = authentication.getName();
+
+        RotinaResposeUsuario response = rotinaService.gerarRotinaDemonstracao(cpf);
+        rotinaService.salvarRotinaGerada(cpf, response);
+
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/DeletaRotinaUsuario")

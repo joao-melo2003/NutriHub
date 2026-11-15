@@ -438,7 +438,7 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
-   public void criaAlimento(AlimentosRequest request) {
+    public void criaAlimento(AlimentosRequest request) {
 
         Boolean flag = alimentoRepository.existsByNome(request.nome());
 

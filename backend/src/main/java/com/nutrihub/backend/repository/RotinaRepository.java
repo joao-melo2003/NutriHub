@@ -14,4 +14,6 @@ public interface RotinaRepository extends JpaRepository<Rotinas, String> {
 
     @Query("SELECT r.id FROM Rotinas r WHERE r.usuario.cpf = :cpf")
     Optional<String> findIdByUsuarioCpf(@Param("cpf") String cpf);
+
+    boolean existsByUsuarioCpf(String cpf);
 }

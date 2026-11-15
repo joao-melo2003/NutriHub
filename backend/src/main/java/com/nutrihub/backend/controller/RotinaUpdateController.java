@@ -19,9 +19,7 @@ public class RotinaUpdateController {
     }
 
     @GetMapping("/RotinaUpdateForms1")
-    public ResponseEntity<RotinaUpdateForms1Response> buscarForms1(
-            Authentication authentication
-    ) {
+    public ResponseEntity<RotinaUpdateForms1Response> buscarForms1(Authentication authentication) {
 
         String cpf = authentication.getName();
 
@@ -31,10 +29,7 @@ public class RotinaUpdateController {
     }
 
     @PutMapping("/RotinaUpdateForms1")
-    public ResponseEntity<Void> atualizarForms1(
-            Authentication authentication,
-            @Valid @RequestBody RotinaUpdateForms1Request request
-    ) {
+    public ResponseEntity<Void> atualizarForms1(Authentication authentication,@Valid @RequestBody RotinaUpdateForms1Request request) {
 
         String cpf = authentication.getName();
 
@@ -44,9 +39,7 @@ public class RotinaUpdateController {
     }
 
     @GetMapping("/RotinaUpdateForms2")
-    public ResponseEntity<RotinaUpdateForms2Response> buscarForms2(
-            Authentication authentication
-    ) {
+    public ResponseEntity<RotinaUpdateForms2Response> buscarForms2(Authentication authentication) {
 
         String cpf = authentication.getName();
 
@@ -56,10 +49,7 @@ public class RotinaUpdateController {
     }
 
     @PutMapping("/RotinaUpdateForms2")
-    public ResponseEntity<Void> atualizarForms2(
-            Authentication authentication,
-            @Valid @RequestBody RotinaUpdateForms2Request request
-    ) {
+    public ResponseEntity<Void> atualizarForms2(Authentication authentication,@Valid @RequestBody RotinaUpdateForms2Request request) {
 
         String cpf = authentication.getName();
 
@@ -69,9 +59,7 @@ public class RotinaUpdateController {
     }
 
     @GetMapping("/RotinaUpdateForms3")
-    public ResponseEntity<RotinaUpdateForms3Response> buscarForms3(
-            Authentication authentication
-    ) {
+    public ResponseEntity<RotinaUpdateForms3Response> buscarForms3(Authentication authentication) {
 
         String cpf = authentication.getName();
 
@@ -81,10 +69,7 @@ public class RotinaUpdateController {
     }
 
     @PutMapping("/RotinaUpdateForms3")
-    public ResponseEntity<Void> atualizarForms3(
-            Authentication authentication,
-            @Valid @RequestBody RotinaUpdateForms3Request request
-    ) {
+    public ResponseEntity<Void> atualizarForms3(Authentication authentication,@Valid @RequestBody RotinaUpdateForms3Request request) {
 
         String cpf = authentication.getName();
 
@@ -94,9 +79,7 @@ public class RotinaUpdateController {
     }
 
     @GetMapping("/RotinaUpdateForms4")
-    public ResponseEntity<RotinaUpdateForms4Response> buscarForms4(
-            Authentication authentication
-    ) {
+    public ResponseEntity<RotinaUpdateForms4Response> buscarForms4(Authentication authentication) {
 
         String cpf = authentication.getName();
 
@@ -106,10 +89,7 @@ public class RotinaUpdateController {
     }
 
     @PutMapping("/RotinaUpdateForms4")
-    public ResponseEntity<Void> atualizarForms4(
-            Authentication authentication,
-            @Valid @RequestBody RotinaUpdateForms4Request request
-    ) {
+    public ResponseEntity<Void> atualizarForms4(Authentication authentication,@Valid @RequestBody RotinaUpdateForms4Request request) {
 
         String cpf = authentication.getName();
 
@@ -119,9 +99,7 @@ public class RotinaUpdateController {
     }
 
     @GetMapping("/RotinaUpdateForms5")
-    public ResponseEntity<RotinaUpdateForms5Response> buscarForms5(
-            Authentication authentication
-    ) {
+    public ResponseEntity<RotinaUpdateForms5Response> buscarForms5(Authentication authentication) {
 
         String cpf = authentication.getName();
 
@@ -131,10 +109,7 @@ public class RotinaUpdateController {
     }
 
     @PutMapping("/RotinaUpdateForms5")
-    public ResponseEntity<Void> atualizarForms5(
-            Authentication authentication,
-            @Valid @RequestBody RotinaUpdateForms5Request request
-    ) {
+    public ResponseEntity<Void> atualizarForms5(Authentication authentication,@Valid @RequestBody RotinaUpdateForms5Request request) {
 
         String cpf = authentication.getName();
 
