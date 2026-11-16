@@ -108,10 +108,15 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,"CPF já cadastrado");
         }
 
-        if(!(request.dataNascimento().getYear() >= 1930 && request.dataNascimento().getYear() <= LocalDate.now().getYear() - 16)){
-            if(LocalDate.now().getYear() <= 16 - request.dataNascimento().getYear()){
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O usuário tem ser maior de 16 anos");
-            }else throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O usuário já esta fazendo hora extra na terra!");
+        LocalDate dataNascimento = request.dataNascimento();
+        LocalDate hoje = LocalDate.now();
+
+        if (dataNascimento.getYear() < 1930 || dataNascimento.isAfter(hoje)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuário esta fazendo hora extra na terra");
+        }
+
+        if (dataNascimento.isAfter(hoje.minusYears(16))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O usuário deve ser maior de 16 anos.");
         }
 
         if (usuarioRepository.existsByEmail(request.email())) {

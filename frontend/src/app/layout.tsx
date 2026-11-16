@@ -1,4 +1,21 @@
-//import type { Metadata } from "next";
-//import localFont from "next/font/local";
-//import "./globals.css";
+import type { Metadata } from "next";
+import "./globals.css";
 
+export const metadata: Metadata = {
+  title: "NutriHub",
+  description: "Plataforma NutriHub",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="pt-BR">
+      <body className="bg-[#F7F7F2] antialiased">
+        {children}
+      </body>
+    </html>
+  );
+}

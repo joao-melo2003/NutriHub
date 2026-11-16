@@ -35,7 +35,7 @@ public class EmailService {
     public void enviarEmailVerificacao(Usuario usuario, String token) {
 
         String link = frontendUrl.replaceAll("/$", "")
-                + "/auth/confirmar-email?token=" + token;
+                + "/login/confirm-email?token=" + token;
 
         Context context = new Context(new Locale("pt", "BR"));
 
@@ -53,7 +53,7 @@ public class EmailService {
     public void enviarEmailRecuperacaoSenha(Usuario usuario,String token) {
 
         String link = frontendUrl.replaceAll("/$", "")
-                + "/auth/password-reset?token=" + token;
+                + "/esqueci-senha/reset-senha?token=" + token;
 
         Context context = new Context(new Locale("pt", "BR"));
 
