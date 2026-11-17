@@ -33,7 +33,7 @@ export default function LoginPage() {
     try {
 
       await login(email.trim(), senha);
-      router.push("/dashboard");
+      router.push("/");
 
     } catch (error) {
       setErro(
