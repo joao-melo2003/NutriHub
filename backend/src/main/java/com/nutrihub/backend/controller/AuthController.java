@@ -99,7 +99,6 @@ public class AuthController {
         if (!confirmado) {
             return ResponseEntity.status(HttpStatus.GONE).body(Map.of("message", "Token de confirmação expirado."));
         }
-
         return ResponseEntity.ok(Map.of("message", "E-mail confirmado com sucesso!"));
     }
 

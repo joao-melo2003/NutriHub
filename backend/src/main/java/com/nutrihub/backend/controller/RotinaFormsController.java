@@ -17,8 +17,7 @@ public class RotinaFormsController {
 
     private final RotinaService rotinaService;
 
-    public RotinaFormsController(
-            RotinaService rotinaFormsService) {
+    public RotinaFormsController(RotinaService rotinaFormsService) {
         this.rotinaService = rotinaFormsService;
     }
 

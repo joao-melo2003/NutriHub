@@ -9,6 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.nutrihub.backend.entity.UserToken;
 import com.nutrihub.backend.entity.Usuario;
+import com.nutrihub.backend.enums.Status_usuarios;
 import com.nutrihub.backend.enums.Tipo_token;
 import com.nutrihub.backend.repository.UsuarioRepository;
 
@@ -24,8 +25,7 @@ public class EmailVerificacaoService {
     public EmailVerificacaoService(
             TokenService tokenService,
             UsuarioRepository usuarioRepository,
-            EmailService emailService
-    ) {
+            EmailService emailService) {
         this.tokenService = tokenService;
         this.usuarioRepository = usuarioRepository;
         this.emailService = emailService;
@@ -37,8 +37,7 @@ public class EmailVerificacaoService {
         String token = tokenService.criarToken(
                 usuario,
                 Tipo_token.EMAIL_VERIFICATION,
-                Duration.ofHours(24)
-        );
+                Duration.ofHours(24));
 
         emailService.enviarEmailVerificacao(usuario, token);
     }
@@ -48,15 +47,13 @@ public class EmailVerificacaoService {
 
         UserToken verificacao = tokenService.buscarToken(
                 token,
-                Tipo_token.EMAIL_VERIFICATION
-        );
+                Tipo_token.EMAIL_VERIFICATION);
 
         if (verificacao.getUsedAt() != null) {
 
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Este token já foi utilizado"
-            );
+                    "Este token já foi utilizado");
         }
 
         Usuario usuario = verificacao.getUsuario();
@@ -73,6 +70,7 @@ public class EmailVerificacaoService {
         }
 
         usuario.setEmailVerificado(true);
+        usuario.setStatus(Status_usuarios.ATIVO);
 
         usuarioRepository.save(usuario);
 

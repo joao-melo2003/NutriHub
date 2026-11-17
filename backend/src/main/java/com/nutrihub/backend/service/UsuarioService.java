@@ -144,7 +144,7 @@ public class UsuarioService {
         usuario.setSexo(request.sexo());
 
         usuario.setTipo(Tipo_usuarios.COMUM);
-        usuario.setStatus(Status_usuarios.ATIVO);
+        usuario.setStatus(Status_usuarios.DESATIVADO);
         usuario.setSoftdelete(false);
         usuario.setQtSenha(request.senha().length());
         usuario.setEmailVerificado(false);
@@ -376,11 +376,11 @@ public class UsuarioService {
             );
         }
 
-        Pageable ativosPage = PageRequest.of(paginaAtivos, 10, Sort.by("nome").ascending());
+        Pageable ativosPage = PageRequest.of(paginaAtivos, 10, Sort.by(Usuario::getNome).ascending());
 
-        Pageable banidosPage = PageRequest.of(paginaBanidos, 10, Sort.by("nome").ascending());
+        Pageable banidosPage = PageRequest.of(paginaBanidos, 10, Sort.by(Usuario::getNome).ascending());
 
-        Pageable desativadosPage = PageRequest.of(paginaDesativados, 10, Sort.by("nome").ascending());
+        Pageable desativadosPage = PageRequest.of(paginaDesativados, 10, Sort.by(Usuario::getNome).ascending());
 
         return new UsuariosPorStatusResponse(
             usuarioRepository.findByTipoAndStatus(Tipo_usuarios.COMUM,Status_usuarios.ATIVO,ativosPage).map(this::paraResponse),

@@ -28,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.nutrihub.backend.service.UsuarioService;
 
 
+
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
@@ -51,11 +52,18 @@ public class AdminController {
         }
     }
 
-    /*
-     * ?paginaAtivos=1&paginaBanidos=1
-     * 
-     * page 0 é a primeira página
-     */
+    @GetMapping("/tipo-usuario")
+    public ResponseEntity<Void> getMethodName(Authentication authentication) {
+        String cpf = authentication.getName();
+        Tipo_usuarios tipo = usuarioService.tipoResponse(cpf);
+
+        if(!tipo.equals(Tipo_usuarios.ADMIN)){
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }else{
+            return ResponseEntity.noContent().build();
+        }
+    }
+    
     @GetMapping("/indexUsuarios")
     public ResponseEntity<UsuariosPorStatusResponse> buscaUsuarios(Authentication authentication,
             @RequestParam(defaultValue = "0") int paginaAtivos,
@@ -196,6 +204,4 @@ public class AdminController {
             usuarioService.buscaRestricao(nome, tipo, pagina)
         );
     }
-
-
 }

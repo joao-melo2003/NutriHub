@@ -14,6 +14,7 @@ import com.nutrihub.backend.service.UsuarioService;
 
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.Map;
+
+import org.springframework.web.server.ResponseStatusException;
+
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -38,6 +42,15 @@ public class UsuarioController {
         this.rotinaService = rotinaFormsService;
     }
 
+    @GetMapping("/sessao")
+    public ResponseEntity<Void> verificarSessao(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado");
+        }
+        
+        return ResponseEntity.noContent().build();
+    }
+    
     @PostMapping("/cadastrar")
     public ResponseEntity<UsuarioResponse> cadastro(@Valid @RequestBody UsuarioRequest request) {
 
@@ -123,7 +136,7 @@ public class UsuarioController {
 
         RotinaUsuarioResultado resultado = rotinaService.verificarRotinaUsuario(cpf);
 
-        if ("usuario sem rotina".equals(resultado.mensagem())) {
+        if("usuario sem rotina".equals(resultado.mensagem())) {
 
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 Map.of(
@@ -133,7 +146,7 @@ public class UsuarioController {
             );
         }
 
-        if ("rotina corrompida".equals(resultado.mensagem())) {
+        if("rotina corrompida".equals(resultado.mensagem())) {
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(
                 Map.of(

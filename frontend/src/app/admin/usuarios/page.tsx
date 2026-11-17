@@ -675,7 +675,7 @@ export default function GerenciarUsuariosPage() {
                             <div className="mb-8">
                                 <TabelaUsuarios
                                     titulo={`Resultados para “${filtroAplicado}”`}
-                                    descricao="Busca com paginação própria, sem alterar as três tabelas abaixo."
+                                    descricao=""
                                     indicador="bg-yellow-400 text-yellow-800"
                                     pagina={resultadoFiltro}
                                     carregando={carregandoFiltro}

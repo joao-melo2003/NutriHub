@@ -8,7 +8,6 @@ import com.nutrihub.backend.dto.LoginResponse;
 import com.nutrihub.backend.entity.Usuario;
 import com.nutrihub.backend.repository.UsuarioRepository;
 import com.nutrihub.backend.enums.Status_usuarios;
-import com.nutrihub.backend.enums.Tipo_usuarios;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;

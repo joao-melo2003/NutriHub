@@ -13,7 +13,7 @@ public record AlimentosRequest(
 
     @NotBlank
     @Size(min = 3, max = 255)
-    @Pattern(regexp = "^[\\p{L}\\p{M}]+(?: [\\p{L}\\p{M}]+)*$")
+    @Pattern(regexp = "^[\\p{L}\\p{M}]+(?:[ '-][\\p{L}\\p{M}]+)*$", message = "O nome do alimento deve conter apenas letras, sem números ou caracteres especiais.")
     String nome,
 
     @NotNull

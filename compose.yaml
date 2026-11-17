@@ -12,7 +12,7 @@ services:
     volumes:
       - mariadb_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -53,10 +53,11 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+      - frontend_node_modules:/app/node_modules
     env_file:
-    - .env
+      - .env
+    command: sh -c "pnpm install --frozen-lockfile && pnpm dev"
+
   mailpit:
     image: axllent/mailpit:latest
     container_name: nutrihub-mailpit
@@ -68,3 +69,5 @@ services:
 volumes:
   mariadb_data:
   maven_cache:
+  frontend_node_modules:
+  frontend_next:

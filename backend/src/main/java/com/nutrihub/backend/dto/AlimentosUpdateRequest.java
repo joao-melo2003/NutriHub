@@ -12,7 +12,7 @@ public record AlimentosUpdateRequest(
 
     @NotBlank
     @Size(min = 2, max = 255)
-    @Pattern(regexp = "^[\\p{L}\\p{M}]+(?: [\\p{L}\\p{M}]+)*$")
+    @Pattern(regexp = "^[\\p{L}\\p{M}]+(?:[ '-][\\p{L}\\p{M}]+)*$", message = "O nome do alimento deve conter apenas letras, sem números ou caracteres especiais.")
     String nome,
 
     Categoria_alimentos categoria,
