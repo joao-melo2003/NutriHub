@@ -1,3 +1,5 @@
 export default function app(){
-    return <p></p>
+      return<main>
+    <p className="text-black">Pagina de explicação rotina</p>
+  </main>
 }

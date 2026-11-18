@@ -1,352 +1,223 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-    AlertTriangle,
-    ArrowRight,
-    CheckCircle2,
-    ClipboardList,
-    LoaderCircle,
-    Pencil,
-    Plus,
-    RefreshCw,
-    X,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertTriangle, ArrowRight, ClipboardList, LoaderCircle, Pencil, Plus, RefreshCw, Trash2} from "lucide-react";
+import { deletarRotinaUsuario, verificarRotinaUsuario } from "@/services/rotinaService";
+import type { RotinaCompleta } from "@/types/padroes_rotina";
+import RotinaWizard from "./forms/RotinaWizard";
+import RotinaEditarWizard from "./forms/RotinaEditarWizard";
+import VisualizacaoRotina from "./VisualizacaoRotina";
 
-import {
-    verificarRotinaUsuario,
-} from "@/services/rotinaService";
-
-import type {
-    RotinaUsuario,
-    VerificarRotinaResult
-} from "@/types/padroes_rotina";
-
-type EstadoPagina = "carregando" | "sem-rotina" | "corrompida" | "ok" | "erro";
-type ModoFormulario = "criar" | "editar" | null;
+type VerificarResultado = Awaited<ReturnType<typeof verificarRotinaUsuario>>;
+type Estado = "carregando" | "ok" | "sem-rotina" | "corrompida" | "erro";
 
 export default function RotinaPage() {
-    const [estado, setEstado] = useState<EstadoPagina>("carregando");
-    const [rotina, setRotina] = useState<RotinaUsuario | null>(null);
-    const [mensagem, setMensagem] = useState("");
+  const router = useRouter();
+  const [estado, setEstado] = useState<Estado>("carregando");
+  const [rotina, setRotina] = useState<RotinaCompleta | null>(null);
+  const [mensagem, setMensagem] = useState("");
+  const [modalCorrompida, setModalCorrompida] = useState(false);
+  const [modo, setModo] = useState<"criar" | "editar" | null>(null);
+  const [confirmarExclusao, setConfirmarExclusao] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
+  const [erroExclusao, setErroExclusao] = useState("");
+  const consultaInicial = useRef<Promise<VerificarResultado> | null>(null);
 
-    const [modalCorrompida, setModalCorrompida] = useState(false);
-    const [modoFormulario, setModoFormulario] = useState<ModoFormulario>(null);
-
-    // Reutiliza a primeira Promise quando o Strict Mode reexecuta o efeito.
-    // Assim não repetimos a consulta inicial durante a mesma montagem.
-    const requisicaoInicial = useRef<Promise<VerificarRotinaResult> | null>(null);
-
-    const aplicarResultado = useCallback((resultado: VerificarRotinaResult) => {
-        if (resultado.status === "OK") {
-            setRotina(resultado.rotina);
-            setMensagem("");
-            setModalCorrompida(false);
-            setEstado("ok");
-            return;
-        }
-
-        setRotina(null);
-        setMensagem(resultado.message);
-
-        if (resultado.status === "SEM_ROTINA") {
-            setModalCorrompida(false);
-            setEstado("sem-rotina");
-        } else {
-            // Não mostramos o botão de criar rotina em caso de corrupção.
-            setModalCorrompida(true);
-            setEstado("corrompida");
-        }
-    }, []);
-
-    useEffect(() => {
-        let ativo = true;
-
-        if (!requisicaoInicial.current) {
-            requisicaoInicial.current = verificarRotinaUsuario();
-        }
-
-        requisicaoInicial.current
-            .then((resultado) => {
-                if (ativo) aplicarResultado(resultado);
-            })
-            .catch((error: unknown) => {
-                if (!ativo) return;
-                setMensagem(
-                    error instanceof Error
-                        ? error.message
-                        : "Não foi possível verificar sua rotina.",
-                );
-                setEstado("erro");
-            });
-
-        return () => {
-            ativo = false;
-        };
-    }, [aplicarResultado]);
-
-    // Pode ser chamado novamente após a conclusão dos formulários.
-    async function recarregarRotina() {
-        setEstado("carregando");
-        setMensagem("");
-
-        try {
-            const resultado = await verificarRotinaUsuario();
-            aplicarResultado(resultado);
-        } catch (error) {
-            setMensagem(
-                error instanceof Error
-                    ? error.message
-                    : "Não foi possível verificar sua rotina.",
-            );
-            setEstado("erro");
-        }
+  const aplicar = useCallback((resultado: VerificarResultado) => {
+    if (resultado.status === "OK") {
+      // O backend devolve idRotina (e não apenas id), além dos arrays da agenda.
+      setRotina(resultado.rotina as unknown as RotinaCompleta);
+      setEstado("ok");
+      setModalCorrompida(false);
+      setMensagem("");
+    } else {
+      setRotina(null);
+      setMensagem(resultado.message);
+      if (resultado.status === "SEM_ROTINA") {
+        setEstado("sem-rotina");
+        setModalCorrompida(false);
+      } else {
+        setEstado("corrompida");
+        setModalCorrompida(true);
+      }
     }
+  }, []);
 
-    // Esc fecha os modais, sem alterar o estado real da rotina.
-    useEffect(() => {
-        if (!modalCorrompida && !modoFormulario) return;
-
-        function aoPressionarTecla(event: KeyboardEvent) {
-            if (event.key === "Escape") {
-                setModalCorrompida(false);
-                setModoFormulario(null);
-            }
+  useEffect(() => {
+    let ativo = true;
+    if (!consultaInicial.current) consultaInicial.current = verificarRotinaUsuario();
+    consultaInicial.current
+      .then(r => { if (ativo) aplicar(r); })
+      .catch(e => {
+        if (ativo) {
+          setMensagem(e instanceof Error ? e.message : "Erro ao consultar rotina.");
+          setEstado("erro");
         }
+      });
+    return () => { ativo = false; };
+  }, [aplicar]);
 
-        document.addEventListener("keydown", aoPressionarTecla);
-        return () => document.removeEventListener("keydown", aoPressionarTecla);
-    }, [modalCorrompida, modoFormulario]);
 
-    return (
-        <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden bg-[#F6F6F2] px-4 py-10 sm:px-6">
-            <div className="pointer-events-none absolute -left-28 -top-28 h-80 w-80 rounded-full bg-yellow-300/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-yellow-400/15 blur-3xl" />
+  const recarregar = useCallback(async (exibirCarregamento = true) => {
+    if (exibirCarregamento) setEstado("carregando");
+    try {
+      aplicar(await verificarRotinaUsuario());
+    } catch (e) {
+      if (exibirCarregamento) {
+        setMensagem(e instanceof Error ? e.message : "Erro ao consultar rotina.");
+        setEstado("erro");
+      }
+    }
+  }, [aplicar]);
 
-            <div className="relative mx-auto w-full max-w-5xl">
-                <header className="mb-9 text-center">
-                    <div className="mb-4 flex justify-center">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-400 shadow-sm">
-                            <ClipboardList size={28} strokeWidth={2.2} className="text-neutral-950" />
-                        </div>
-                    </div>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-neutral-950 sm:text-4xl">
-                        Minha rotina
-                    </h1>
-                    <p className="mt-3 text-sm text-neutral-500 sm:text-base">
-                        Organize seus treinos, sua alimentação e seus objetivos em um só lugar.
-                    </p>
-                </header>
+  async function excluirRotina() {
+    if (excluindo) return;
+    setExcluindo(true);
+    setErroExclusao("");
+    try {
+      await deletarRotinaUsuario(true);
+      setConfirmarExclusao(false);
+      await recarregar();
+    } catch (e) {
+      setErroExclusao(e instanceof Error ? e.message : "Não foi possível excluir a rotina.");
+    } finally {
+      setExcluindo(false);
+    }
+  }
 
-                {/* Enquanto a API responde */}
-                {estado === "carregando" && (
-                    <div role="status" className="flex min-h-72 flex-col items-center justify-center rounded-3xl border border-neutral-200 bg-white px-6 py-12 text-center shadow-sm">
-                        <LoaderCircle size={40} className="animate-spin text-yellow-500" />
-                        <h2 className="mt-5 text-xl font-bold text-neutral-900">
-                            Verificando sua rotina...
-                        </h2>
-                        <p className="mt-2 text-sm text-neutral-500">
-                            Estamos consultando suas informações.
-                        </p>
-                    </div>
-                )}
+  useEffect(() => {
+    function tecla(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      if (modalCorrompida) setModalCorrompida(false);
+      if (confirmarExclusao && !excluindo) setConfirmarExclusao(false);
+    }
+    document.addEventListener("keydown", tecla);
+    return () => document.removeEventListener("keydown", tecla);
+  }, [modalCorrompida, confirmarExclusao, excluindo]);
 
-                {/* 404: usuário sem rotina */}
-                {estado === "sem-rotina" && (
-                    <button
-                        type="button"
-                        onClick={() => setModoFormulario("criar")}
-                        className="group flex min-h-64 w-full flex-col items-center justify-center gap-5 rounded-3xl border-2 border-dashed border-yellow-300 bg-white px-6 py-10 text-center shadow-[0_16px_48px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-1 hover:border-yellow-400 hover:bg-yellow-50/40 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-yellow-500 sm:min-h-80"
-                    >
-                        <span className="flex h-20 w-20 items-center justify-center rounded-full bg-yellow-400 text-neutral-950 transition-transform duration-200 group-hover:scale-110">
-                            <Plus size={38} strokeWidth={2.5} />
-                        </span>
-                        <span className="text-2xl font-extrabold text-neutral-950 sm:text-3xl">
-                            Crie sua rotina de treino
-                        </span>
-                        <span className="max-w-md text-sm leading-relaxed text-neutral-500">
-                            Comece a montar sua rotina personalizada com o formulário passo a passo.
-                        </span>
-                        <span className="inline-flex items-center gap-2 text-sm font-bold text-yellow-700">
-                            Começar agora <ArrowRight size={17} />
-                        </span>
-                    </button>
-                )}
-
-                {/* 200: rotina encontrada. O conteúdo real será definido na próxima etapa. */}
-                {estado === "ok" && rotina && (
-                    <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-10">
-                        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex items-start gap-4">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-yellow-100">
-                                    <CheckCircle2 size={25} className="text-yellow-700" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-neutral-950">Sua rotina foi encontrada</h2>
-                                    <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-                                        A rotina está cadastrada. A exibição dos dados será adicionada
-                                        quando definirmos o formato dos formulários.
-                                    </p>
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setModoFormulario("editar")}
-                                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 text-sm font-bold text-neutral-950 transition-colors hover:bg-yellow-300"
-                            >
-                                <Pencil size={17} /> Editar rotina
-                            </button>
-                        </div>
-
-                        {/* TODO - ETAPA FUTURA: exibir aqui a rotina formatada.
-                O formato da rotina será definido depois que os cinco
-                formulários e os dados retornados pelo backend forem detalhados.
-
-                Exemplo futuro:
-                <VisualizacaoRotina rotina={rotina} />
-            */}
-                    </section>
-                )}
-
-                {/* 409: mostramos o modal de erro. Nunca habilitamos a criação aqui. */}
-                {estado === "corrompida" && (
-                    <section className="flex min-h-64 flex-col items-center justify-center rounded-3xl border border-neutral-200 bg-white px-6 py-10 text-center shadow-sm">
-                        <AlertTriangle size={34} className="text-yellow-600" />
-                        <h2 className="mt-4 text-xl font-bold text-neutral-900">
-                            Não foi possível exibir sua rotina
-                        </h2>
-                        <p className="mt-2 max-w-md text-sm text-neutral-500">
-                            {mensagem || "Sua rotina precisa ser verificada."}
-                        </p>
-                    </section>
-                )}
-
-                {/* Erro inesperado, diferente de 404 e 409 */}
-                {estado === "erro" && (
-                    <section className="flex min-h-64 flex-col items-center justify-center rounded-3xl border border-neutral-200 bg-white px-6 py-10 text-center shadow-sm">
-                        <AlertTriangle size={36} className="text-red-500" />
-                        <h2 className="mt-4 text-xl font-bold text-neutral-900">
-                            Não foi possível carregar sua rotina
-                        </h2>
-                        <p role="alert" className="mt-2 max-w-md text-sm text-neutral-500">
-                            {mensagem}
-                        </p>
-                        <button
-                            type="button"
-                            onClick={() => void recarregarRotina()}
-                            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 text-sm font-bold text-neutral-950 hover:bg-yellow-300"
-                        >
-                            <RefreshCw size={17} /> Tentar novamente
-                        </button>
-                    </section>
-                )}
+  return (
+    <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden bg-[#F6F6F2] px-4 py-9 sm:px-6">
+      <style>{`@keyframes popIn { from { opacity: 0; transform: scale(.94) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }`}</style>
+      <div className="pointer-events-none absolute -left-28 -top-28 h-80 w-80 rounded-full bg-yellow-300/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-yellow-400/15 blur-3xl" />
+      <div className="relative mx-auto max-w-7xl">
+        <header className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-4">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-yellow-400 shadow-sm">
+              <ClipboardList size={28} className="text-neutral-950" />
+            </span>
+            <div>
+              <h1 className="text-2xl font-extrabold text-neutral-950 sm:text-3xl">Minha rotina</h1>
+              <p className="mt-1 text-sm text-neutral-500">Seu planejamento semanal de sono, treino e alimentação.</p>
             </div>
+          </div>
+          {estado === "ok" && (
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => setModo("editar")}
+                className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 text-sm font-bold text-neutral-950 hover:bg-yellow-300">
+                <Pencil size={17}/> Editar rotina
+              </button>
+              <button type="button" onClick={() => { setErroExclusao(""); setConfirmarExclusao(true); }}
+                className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-100">
+                <Trash2 size={17}/> Excluir rotina
+              </button>
+            </div>
+          )}
+        </header>
 
-            {/* MODAL: rotina corrompida (fechável no OK ou fora do card) */}
-            {modalCorrompida && estado === "corrompida" && (
-                <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
-                    onMouseDown={(event) => {
-                        if (event.target === event.currentTarget) {
-                            setModalCorrompida(false);
-                        }
-                    }}
-                >
-                    <section
-                        role="alertdialog"
-                        aria-modal="true"
-                        aria-labelledby="rotina-corrompida-titulo"
-                        aria-describedby="rotina-corrompida-mensagem"
-                        className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
-                    >
-                        <div className="h-2 bg-yellow-400" />
-                        <div className="flex flex-col items-center px-7 py-9 text-center">
-                            <span className="flex h-20 w-20 items-center justify-center rounded-full bg-yellow-100">
-                                <AlertTriangle size={38} className="text-yellow-700" />
-                            </span>
-                            <h2 id="rotina-corrompida-titulo" className="mt-5 text-2xl font-bold text-neutral-900">
-                                Problema com sua rotina
-                            </h2>
-                            <p id="rotina-corrompida-mensagem" className="mt-3 text-sm leading-relaxed text-neutral-600">
-                                {mensagem || "A rotina está corrompida e não pode ser exibida."}
-                            </p>
-                            <button
-                                type="button"
-                                autoFocus
-                                onClick={() => setModalCorrompida(false)}
-                                className="mt-7 w-full rounded-xl bg-yellow-400 px-5 py-3.5 text-sm font-bold text-neutral-950 transition-colors hover:bg-yellow-300"
-                            >
-                                OK
-                            </button>
-                        </div>
-                    </section>
-                </div>
-            )}
+        {estado === "carregando" && (
+          <section role="status" className="flex min-h-64 flex-col items-center justify-center rounded-3xl bg-white p-10 text-center shadow-sm">
+            <LoaderCircle size={42} className="animate-spin text-yellow-500" />
+            <p className="mt-4 font-bold text-neutral-800">Carregando sua rotina...</p>
+          </section>
+        )}
 
-            {/* MODAL RESERVADO PARA OS CINCO FORMULÁRIOS */}
-            {modoFormulario !== null && (
-                <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4 py-8 backdrop-blur-sm"
-                    onMouseDown={(event) => {
-                        if (event.target === event.currentTarget) setModoFormulario(null);
-                    }}
-                >
-                    <section
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="rotina-form-titulo"
-                        className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
-                    >
-                        <div className="h-2 bg-yellow-400" />
-                        <div className="px-6 py-8 sm:px-10 sm:py-10">
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
-                                    <h2 id="rotina-form-titulo" className="text-2xl font-extrabold text-neutral-950">
-                                        {modoFormulario === "criar" ? "Criar minha rotina" : "Editar minha rotina"}
-                                    </h2>
-                                    <p className="mt-2 text-sm text-neutral-500">
-                                        Os cinco formulários sequenciais serão conectados nesta área.
-                                    </p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setModoFormulario(null)}
-                                    aria-label="Fechar formulário"
-                                    className="rounded-xl p-2 text-neutral-600 hover:bg-neutral-100"
-                                >
-                                    <X size={22} />
-                                </button>
-                            </div>
+        {estado === "sem-rotina" && (
+          <button type="button" onClick={() => setModo("criar")}
+            className="group flex min-h-72 w-full flex-col items-center justify-center gap-5 rounded-3xl border-2 border-dashed border-yellow-300 bg-white px-6 py-12 text-center shadow-sm transition hover:-translate-y-1 hover:border-yellow-400 hover:shadow-lg">
+            <span className="flex h-20 w-20 items-center justify-center rounded-full bg-yellow-400 transition-transform group-hover:scale-110">
+              <Plus size={38} className="text-neutral-950" />
+            </span>
+            <span className="text-2xl font-extrabold text-neutral-950">Crie sua rotina de treino</span>
+            <span className="max-w-md text-sm text-neutral-500">Configure seus objetivos, horários, restrições e alimentos em cinco etapas.</span>
+            <span className="flex items-center gap-2 text-sm font-bold text-yellow-700">Começar agora <ArrowRight size={17}/></span>
+          </button>
+        )}
 
-                            <div className="mt-7 rounded-2xl border-2 border-dashed border-yellow-200 bg-yellow-50/40 px-6 py-12 text-center">
-                                <ClipboardList size={34} className="mx-auto text-yellow-600" />
-                                <p className="mt-4 font-semibold text-neutral-800">
-                                    Espaço reservado para os formulários
-                                </p>
-                                <p className="mt-2 text-sm text-neutral-500">
-                                    Vamos montar as etapas na próxima fase.
-                                </p>
-                            </div>
+        {estado === "ok" && rotina && <VisualizacaoRotina rotina={rotina} />}
 
-                            {/* TODO - FORMS (etapa seguinte):
-                  Importar o fluxo de src/components/forms ou da sua pasta forms.
-                  O modal NÃO redireciona ainda (nenhum router.push).
-                  Usaremos o mesmo fluxo para criar e editar.
+        {estado === "corrompida" && (
+          <section className="flex min-h-64 flex-col items-center justify-center rounded-3xl bg-white p-8 text-center shadow-sm">
+            <AlertTriangle size={38} className="text-amber-600" />
+            <h2 className="mt-4 text-xl font-bold text-neutral-900">Não foi possível exibir sua rotina</h2>
+            <p className="mt-2 max-w-lg text-sm text-neutral-500">{mensagem}</p>
+          </section>
+        )}
+        {estado === "erro" && (
+          <section className="flex min-h-64 flex-col items-center justify-center rounded-3xl bg-white p-8 text-center shadow-sm">
+            <AlertTriangle size={38} className="text-red-500" />
+            <h2 className="mt-4 text-xl font-bold">Erro ao carregar a rotina</h2>
+            <p role="alert" className="mt-2 text-sm text-neutral-600">{mensagem}</p>
+            <button type="button" onClick={() => void recarregar()} className="mt-6 flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 font-bold hover:bg-yellow-300"><RefreshCw size={16}/> Tentar novamente</button>
+          </section>
+        )}
+      </div>
 
-                  <RotinaWizard
-                    modo={modoFormulario}
-                    rotinaInicial={modoFormulario === "editar" ? rotina : null}
-                    onCancelar={() => setModoFormulario(null)}
-                    onConcluido={async () => {
-                      setModoFormulario(null);
-                      await recarregarRotina();
-                    }}
-                  />
-              */}
-                        </div>
-                    </section>
-                </div>
-            )}
-        </main>
-    );
+      {modalCorrompida && estado === "corrompida" && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm"
+          onMouseDown={e => { if (e.target === e.currentTarget) setModalCorrompida(false); }}>
+          <section role="alertdialog" aria-modal="true" aria-labelledby="titulo-corrompida"
+            className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl animate-[popIn_.22s_ease-out]">
+            <AlertTriangle size={42} className="mx-auto text-amber-600" />
+            <h2 id="titulo-corrompida" className="mt-5 text-xl font-extrabold text-neutral-900">Problema com sua rotina</h2>
+            <p className="mt-3 text-sm text-neutral-600">{mensagem}</p>
+            <button type="button" autoFocus onClick={() => setModalCorrompida(false)}
+              className="mt-7 w-full rounded-xl bg-yellow-400 px-5 py-3 font-bold text-neutral-900 hover:bg-yellow-300">OK</button>
+          </section>
+        </div>
+      )}
+
+      {confirmarExclusao && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm"
+          onMouseDown={e => { if (e.target === e.currentTarget && !excluindo) setConfirmarExclusao(false); }}>
+          <section role="alertdialog" aria-modal="true" aria-labelledby="titulo-excluir"
+            className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl animate-[popIn_.22s_ease-out]">
+            <div className="h-2 bg-red-500" />
+            <div className="p-7 text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100"><Trash2 size={32} className="text-red-600"/></div>
+              <h2 id="titulo-excluir" className="mt-5 text-xl font-extrabold text-neutral-950">Excluir sua rotina?</h2>
+              <p className="mt-3 text-sm text-neutral-600">Esta ação excluirá os dados da rotina. Deseja realmente continuar?</p>
+              {erroExclusao && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{erroExclusao}</p>}
+              <div className="mt-7 grid grid-cols-2 gap-3">
+                <button type="button" disabled={excluindo} onClick={() => setConfirmarExclusao(false)}
+                  className="rounded-xl border border-neutral-200 px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50">Não, cancelar</button>
+                <button type="button" disabled={excluindo} onClick={() => void excluirRotina()}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50">
+                  {excluindo && <LoaderCircle size={16} className="animate-spin"/>}{excluindo ? "Excluindo..." : "Sim, excluir"}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+
+      <RotinaWizard
+        aberto={modo === "criar"}
+        onFechar={() => setModo(null)}
+        onConcluido={async () => {
+          setModo(null);
+          await recarregar();
+          router.push("/rotina");
+        }}
+      />
+
+      {modo === "editar" && (
+        <RotinaEditarWizard
+          onFechar={() => setModo(null)}
+          onAtualizado={() => recarregar(false)}
+        />
+      )}
+    </main>
+  );
 }

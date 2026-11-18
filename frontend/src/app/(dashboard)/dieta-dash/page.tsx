@@ -1,3 +1,5 @@
 export default function app(){
-    return <p></p>
+      return<main>
+    <p className="text-black">Pagina explicação dieta</p>
+  </main>
 }

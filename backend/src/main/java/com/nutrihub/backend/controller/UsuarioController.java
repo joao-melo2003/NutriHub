@@ -159,7 +159,7 @@ public class UsuarioController {
         return ResponseEntity.ok(resultado.rotina());
     }
 
-   @PostMapping("/finalizaRotina")
+    @PostMapping("/finalizaRotina")
     public ResponseEntity<Void> finalizaRotina(Authentication authentication) {
         String cpf = authentication.getName();
 
