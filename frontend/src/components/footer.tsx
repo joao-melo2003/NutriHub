@@ -21,7 +21,7 @@ const marcasDemonstrativas = [
 const linksPlataforma = [
     { nome: "Início", href: "/" },
     { nome: "Dieta", href: "/dieta" },
-    { nome: "Treinos", href: "/treinos" },
+    { nome: "Treinos", href: "/treinos-dash" },
     { nome: "Minha rotina", href: "/rotina" },
 ];
 
