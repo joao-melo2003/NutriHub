@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowRight, ClipboardList, LoaderCircle, Pencil, Plus, RefreshCw, Trash2} from "lucide-react";
+import { AlertTriangle, ArrowRight, ClipboardList, LoaderCircle, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { deletarRotinaUsuario, verificarRotinaUsuario } from "@/services/rotinaService";
+import { checkSession } from "@/services/usuarioService";
 import type { RotinaCompleta } from "@/types/padroes_rotina";
 import RotinaWizard from "./forms/RotinaWizard";
 import RotinaEditarWizard from "./forms/RotinaEditarWizard";
@@ -23,10 +24,10 @@ export default function RotinaPage() {
   const [excluindo, setExcluindo] = useState(false);
   const [erroExclusao, setErroExclusao] = useState("");
   const consultaInicial = useRef<Promise<VerificarResultado> | null>(null);
+  const verificacaoSessao = useRef<Promise<boolean> | null>(null);
 
   const aplicar = useCallback((resultado: VerificarResultado) => {
     if (resultado.status === "OK") {
-      // O backend devolve idRotina (e não apenas id), além dos arrays da agenda.
       setRotina(resultado.rotina as unknown as RotinaCompleta);
       setEstado("ok");
       setModalCorrompida(false);
@@ -46,18 +47,39 @@ export default function RotinaPage() {
 
   useEffect(() => {
     let ativo = true;
-    if (!consultaInicial.current) consultaInicial.current = verificarRotinaUsuario();
-    consultaInicial.current
-      .then(r => { if (ativo) aplicar(r); })
-      .catch(e => {
+
+    async function iniciarPagina() {
+      try {
+        if (!verificacaoSessao.current) {
+          verificacaoSessao.current = checkSession();
+        }
+
+        const possuiSessao = await verificacaoSessao.current;
+        if (!ativo) return;
+
+        if (!possuiSessao) {
+          router.replace("/login");
+          return;
+        }
+
+        if (!consultaInicial.current) {
+          consultaInicial.current = verificarRotinaUsuario();
+        }
+
+        const resultado = await consultaInicial.current;
+        if (ativo) aplicar(resultado);
+      } catch (e) {
         if (ativo) {
           setMensagem(e instanceof Error ? e.message : "Erro ao consultar rotina.");
           setEstado("erro");
         }
-      });
-    return () => { ativo = false; };
-  }, [aplicar]);
+      }
+    }
 
+    void iniciarPagina();
+
+    return () => { ativo = false; };
+  }, [aplicar, router]);
 
   const recarregar = useCallback(async (exibirCarregamento = true) => {
     if (exibirCarregamento) setEstado("carregando");
@@ -116,11 +138,11 @@ export default function RotinaPage() {
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => setModo("editar")}
                 className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 text-sm font-bold text-neutral-950 hover:bg-yellow-300">
-                <Pencil size={17}/> Editar rotina
+                <Pencil size={17} /> Editar rotina
               </button>
               <button type="button" onClick={() => { setErroExclusao(""); setConfirmarExclusao(true); }}
                 className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-100">
-                <Trash2 size={17}/> Excluir rotina
+                <Trash2 size={17} /> Excluir rotina
               </button>
             </div>
           )}
@@ -141,7 +163,7 @@ export default function RotinaPage() {
             </span>
             <span className="text-2xl font-extrabold text-neutral-950">Crie sua rotina de treino</span>
             <span className="max-w-md text-sm text-neutral-500">Configure seus objetivos, horários, restrições e alimentos em cinco etapas.</span>
-            <span className="flex items-center gap-2 text-sm font-bold text-yellow-700">Começar agora <ArrowRight size={17}/></span>
+            <span className="flex items-center gap-2 text-sm font-bold text-yellow-700">Começar agora <ArrowRight size={17} /></span>
           </button>
         )}
 
@@ -159,7 +181,7 @@ export default function RotinaPage() {
             <AlertTriangle size={38} className="text-red-500" />
             <h2 className="mt-4 text-xl font-bold">Erro ao carregar a rotina</h2>
             <p role="alert" className="mt-2 text-sm text-neutral-600">{mensagem}</p>
-            <button type="button" onClick={() => void recarregar()} className="mt-6 flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 font-bold hover:bg-yellow-300"><RefreshCw size={16}/> Tentar novamente</button>
+            <button type="button" onClick={() => void recarregar()} className="mt-6 flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 font-bold hover:bg-yellow-300"><RefreshCw size={16} /> Tentar novamente</button>
           </section>
         )}
       </div>
@@ -185,7 +207,7 @@ export default function RotinaPage() {
             className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl animate-[popIn_.22s_ease-out]">
             <div className="h-2 bg-red-500" />
             <div className="p-7 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100"><Trash2 size={32} className="text-red-600"/></div>
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100"><Trash2 size={32} className="text-red-600" /></div>
               <h2 id="titulo-excluir" className="mt-5 text-xl font-extrabold text-neutral-950">Excluir sua rotina?</h2>
               <p className="mt-3 text-sm text-neutral-600">Esta ação excluirá os dados da rotina. Deseja realmente continuar?</p>
               {erroExclusao && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{erroExclusao}</p>}
@@ -194,7 +216,7 @@ export default function RotinaPage() {
                   className="rounded-xl border border-neutral-200 px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50">Não, cancelar</button>
                 <button type="button" disabled={excluindo} onClick={() => void excluirRotina()}
                   className="flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50">
-                  {excluindo && <LoaderCircle size={16} className="animate-spin"/>}{excluindo ? "Excluindo..." : "Sim, excluir"}
+                  {excluindo && <LoaderCircle size={16} className="animate-spin" />}{excluindo ? "Excluindo..." : "Sim, excluir"}
                 </button>
               </div>
             </div>

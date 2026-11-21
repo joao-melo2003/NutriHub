@@ -130,10 +130,12 @@ export default function DietaPage() {
       </section>
 
       <section aria-labelledby="titulo-importancia" className="mt-12 sm:mt-16">
-        <h2 id="titulo-importancia" className="text-3xl font-extrabold tracking-tight">
+        <div className="flex justify-center align-middle">
+          <h2 id="titulo-importancia" className="text-3xl font-extrabold tracking-tight align">
           Por que ter uma dieta é importante
         </h2>
-        <p className="mt-2 max-w-2xl leading-7 text-neutral-700">
+        </div>
+        <p className="mt-2 leading-7 text-neutral-700">
           Dieta, aqui, não significa passar fome. É o conjunto de alimentos que você consome no dia a dia,
           e escolher bem esse conjunto é um dos pilares da saúde, junto com atividade física e sono.
         </p>
@@ -141,7 +143,7 @@ export default function DietaPage() {
           {importancia.map((item) => (
             <li
               key={item}
-              className="rounded-2xl border border-neutral-200 bg-white p-5 text-sm leading-6 text-neutral-700 sm:p-6"
+              className="rounded-2xl border text-base border-neutral-200 bg-white p-5 leading-6 text-neutral-700 sm:p-6"
             >
               <span className="mb-3 block h-1.5 w-10 rounded-full bg-yellow-400" aria-hidden="true" />
               {item}
@@ -165,10 +167,6 @@ export default function DietaPage() {
             </article>
           ))}
         </div>
-        <p className="mt-6 text-xs leading-5 text-neutral-500">
-          Conteúdo informativo, baseado em orientações gerais de saúde. Para um plano individual,
-          consulte um nutricionista.
-        </p>
       </section>
     </main>
   );
